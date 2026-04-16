@@ -38,6 +38,7 @@ const bookList = document.getElementById("bookList");
 const calendarGrid = document.getElementById("calendarGrid");
 const weekdayRow = document.getElementById("weekdayRow");
 const calendarMonthLabel = document.getElementById("calendarMonthLabel");
+const syncStatusBadge = document.getElementById("syncStatusBadge");
 const prevMonthBtn = document.getElementById("prevMonthBtn");
 const nextMonthBtn = document.getElementById("nextMonthBtn");
 const todayBtn = document.getElementById("todayBtn");
@@ -72,6 +73,8 @@ let currentMonth = startOfMonth(new Date());
 initNavigation();
 initReadingList();
 initCalendar();
+window.addEventListener("online", () => refreshSyncStatus());
+window.addEventListener("offline", () => refreshSyncStatus());
 
 function initNavigation() {
   menuButtons.forEach((button) => {
@@ -265,6 +268,7 @@ function initCalendar() {
   renderWeekdays();
   renderCalendar();
   refreshAppleSubscribeState();
+  refreshSyncStatus();
 
   prevMonthBtn.addEventListener("click", () => {
     currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
@@ -311,10 +315,12 @@ function initCalendar() {
         id: docSnap.id,
         ...docSnap.data()
       }));
+      refreshSyncStatus(snapshot);
       renderCalendar();
     },
     (error) => {
       console.error("Calendar load failed:", error);
+      setSyncStatus("error", "\u65E5\u5386\u8FDE\u63A5\u5931\u8D25");
       calendarGrid.innerHTML = '<div class="empty-text">\u65E5\u5386\u8BFB\u53D6\u5931\u8D25\u3002</div>';
     }
   );
@@ -576,6 +582,46 @@ function refreshAppleSubscribeState() {
   }
 
   appleSyncHint.textContent = `Apple \u8BA2\u9605\u5730\u5740\u5DF2\u5C31\u7EEA\uFF1A${APPLE_CALENDAR_FEED_URL}`;
+}
+
+function refreshSyncStatus(snapshot) {
+  if (!syncStatusBadge) {
+    return;
+  }
+
+  if (window.location.protocol === "file:") {
+    setSyncStatus("local", "\u5F53\u524D\u662F\u672C\u5730\u6587\u4EF6\u6A21\u5F0F\uFF0C\u5176\u4ED6\u8BBE\u5907\u65E0\u6CD5\u76F4\u63A5\u8BBF\u95EE");
+    return;
+  }
+
+  if (!navigator.onLine) {
+    setSyncStatus("error", "\u5F53\u524D\u79BB\u7EBF\uFF0C\u53EA\u663E\u793A\u672C\u5730\u5185\u5BB9");
+    return;
+  }
+
+  if (snapshot && snapshot.metadata && snapshot.metadata.fromCache) {
+    setSyncStatus("local", "\u5DF2\u8FDE\u63A5\u9875\u9762\uFF0C\u6B63\u5728\u7B49\u5F85\u4E91\u7AEF\u6570\u636E");
+    return;
+  }
+
+  setSyncStatus("live", "\u5DF2\u8FDE\u63A5 Firebase\uFF0C\u652F\u6301\u5B9E\u65F6\u540C\u6B65");
+}
+
+function setSyncStatus(type, message) {
+  syncStatusBadge.textContent = message;
+  syncStatusBadge.classList.remove("is-live", "is-local", "is-error");
+
+  if (type === "live") {
+    syncStatusBadge.classList.add("is-live");
+  }
+
+  if (type === "local") {
+    syncStatusBadge.classList.add("is-local");
+  }
+
+  if (type === "error") {
+    syncStatusBadge.classList.add("is-error");
+  }
 }
 
 function buildCalendarIcs(events) {

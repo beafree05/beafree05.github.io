@@ -463,6 +463,41 @@ p {
   color: #8d5d71;
 }
 
+.sync-status-wrap {
+  margin: 10px 0 8px;
+}
+
+.sync-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 248, 250, 0.95);
+  border: 1px solid rgba(248, 165, 194, 0.28);
+  color: #9d7182;
+  font-size: 13px;
+  box-shadow: 0 8px 18px rgba(248, 165, 194, 0.08);
+}
+
+.sync-status-badge.is-live {
+  background: rgba(239, 255, 247, 0.92);
+  border-color: rgba(101, 201, 153, 0.35);
+  color: #3e8a65;
+}
+
+.sync-status-badge.is-local {
+  background: rgba(255, 245, 230, 0.96);
+  border-color: rgba(255, 194, 94, 0.35);
+  color: #a57422;
+}
+
+.sync-status-badge.is-error {
+  background: rgba(255, 238, 241, 0.96);
+  border-color: rgba(224, 112, 145, 0.32);
+  color: #c05c7e;
+}
+
 .calendar-hint {
   max-width: 560px;
   color: var(--muted);
