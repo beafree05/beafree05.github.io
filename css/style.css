@@ -621,6 +621,8 @@ p {
   padding: 24px;
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   border-radius: 28px;
   background: linear-gradient(180deg, rgba(255, 251, 252, 0.98), rgba(255, 244, 247, 0.96));
   border: 1px solid rgba(248, 165, 194, 0.3);
@@ -633,6 +635,11 @@ p {
   gap: 12px;
   align-items: flex-start;
   margin-bottom: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-bottom: 12px;
+  background: linear-gradient(180deg, rgba(255, 251, 252, 0.98), rgba(255, 244, 247, 0.96));
 }
 
 .icon-btn {
@@ -647,6 +654,8 @@ p {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
 .event-form label {
@@ -672,11 +681,11 @@ p {
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 8px;
+  margin-top: auto;
   position: sticky;
   bottom: 0;
   padding-top: 14px;
-  padding-bottom: 4px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(255, 244, 247, 0), rgba(255, 244, 247, 0.96) 28%);
 }
 
@@ -699,6 +708,12 @@ p {
 }
 
 @media (max-width: 768px) {
+  .modal {
+    padding: 0;
+    display: flex;
+    align-items: flex-end;
+  }
+
   .main {
     padding: 16px;
   }
@@ -730,10 +745,22 @@ p {
   }
 
   .modal-panel {
-    margin: 0 auto;
-    padding: 18px;
-    width: min(100vw - 16px, 680px);
-    max-height: calc(100dvh - 12px);
-    border-radius: 22px;
+    margin: 0;
+    padding: 16px 16px 12px;
+    width: 100vw;
+    max-height: min(92dvh, 760px);
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+  }
+
+  .modal-header {
+    padding-top: 2px;
+  }
+
+  .modal-actions {
+    margin-left: -2px;
+    margin-right: -2px;
+    padding-left: 2px;
+    padding-right: 2px;
   }
 }
