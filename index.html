@@ -3,88 +3,154 @@
 <head>
 <meta charset="UTF-8">
 <title>阅读清单</title>
-
 <style>
 body {
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     text-align: center;
     background: #f5f5f5;
+    margin: 0;
+    padding: 40px 20px;
 }
 
 h1 {
-    margin-top: 50px;
+    margin-bottom: 30px;
+}
+
+.input-area {
+    margin-bottom: 20px;
 }
 
 input {
     padding: 10px;
-    width: 200px;
+    width: 240px;
+    font-size: 16px;
 }
 
 button {
-    padding: 10px;
-    margin-left: 5px;
+    padding: 10px 14px;
+    margin-left: 6px;
+    font-size: 14px;
+    cursor: pointer;
 }
 
 ul {
     list-style: none;
     padding: 0;
+    max-width: 500px;
+    margin: 0 auto;
 }
 
 li {
-    margin: 10px;
     background: white;
-    padding: 10px;
-    border-radius: 5px;
-    display: inline-block;
+    margin: 10px 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.book-text {
+    flex: 1;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
 }
 
 .done {
     text-decoration: line-through;
     color: gray;
 }
+
+.delete-btn {
+    margin-left: 10px;
+}
 </style>
-
 </head>
-
 <body>
 
 <h1>📚 我的阅读清单</h1>
 
-<input id="bookInput" placeholder="输入书名">
-<button onclick="addBook()">添加</button>
+<div class="input-area">
+    <input id="bookInput" type="text" placeholder="输入书名">
+    <button onclick="addBook()">添加</button>
+</div>
 
 <ul id="list"></ul>
 
 <script>
+let books = [];
+
+// 页面一打开就读取保存的数据
+window.onload = function () {
+    const savedBooks = localStorage.getItem("readingList");
+    if (savedBooks) {
+        books = JSON.parse(savedBooks);
+        renderList();
+    }
+};
+
+// 保存到浏览器
+function saveBooks() {
+    localStorage.setItem("readingList", JSON.stringify(books));
+}
+
+// 渲染整个列表
+function renderList() {
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    for (let i = 0; i < books.length; i++) {
+        const li = document.createElement("li");
+
+        const span = document.createElement("span");
+        span.textContent = books[i].name;
+        span.className = "book-text";
+
+        if (books[i].done) {
+            span.classList.add("done");
+        }
+
+        // 点击切换已读/未读
+        span.onclick = function () {
+            books[i].done = !books[i].done;
+            saveBooks();
+            renderList();
+        };
+
+        // 删除按钮
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "❌";
+        delBtn.className = "delete-btn";
+        delBtn.onclick = function () {
+            books.splice(i, 1);
+            saveBooks();
+            renderList();
+        };
+
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        list.appendChild(li);
+    }
+}
+
+// 添加书籍
 function addBook() {
-    let input = document.getElementById("bookInput");
-    let bookName = input.value;
+    const input = document.getElementById("bookInput");
+    const bookName = input.value.trim();
 
-    if (bookName === "") return;
+    if (bookName === "") {
+        return;
+    }
 
-    let li = document.createElement("li");
+    books.push({
+        name: bookName,
+        done: false
+    });
 
-    // 书名
-    let span = document.createElement("span");
-    span.textContent = bookName;
-
-    // 点击切换已读
-    span.onclick = function() {
-        span.classList.toggle("done");
-    };
-
-    // 删除按钮
-    let delBtn = document.createElement("button");
-    delBtn.textContent = "❌";
-    delBtn.onclick = function() {
-        li.remove();
-    };
-
-    li.appendChild(span);
-    li.appendChild(delBtn);
-
-    document.getElementById("list").appendChild(li);
-
+    saveBooks();
+    renderList();
     input.value = "";
 }
 </script>
