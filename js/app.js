@@ -10,13 +10,22 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const WEEKDAY_LABELS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const WEEKDAY_LABELS = [
+  "\u5468\u65E5",
+  "\u5468\u4E00",
+  "\u5468\u4E8C",
+  "\u5468\u4E09",
+  "\u5468\u56DB",
+  "\u5468\u4E94",
+  "\u5468\u516D"
+];
+
 const REPEAT_LABELS = {
-  none: "不重复",
-  daily: "每天",
-  weekly: "每周",
-  monthly: "每月",
-  yearly: "每年"
+  none: "\u4E0D\u91CD\u590D",
+  daily: "\u6BCF\u5929",
+  weekly: "\u6BCF\u5468",
+  monthly: "\u6BCF\u6708",
+  yearly: "\u6BCF\u5E74"
 };
 
 const menuButtons = document.querySelectorAll(".menu-btn");
@@ -55,7 +64,7 @@ const booksRef = collection(db, "books");
 const booksQuery = query(booksRef, orderBy("createdAt", "desc"));
 
 const calendarEventsRef = collection(db, "calendarEvents");
-const calendarEventsQuery = query(calendarEventsRef, orderBy("date", "asc"), orderBy("startTime", "asc"));
+const calendarEventsQuery = query(calendarEventsRef, orderBy("date", "asc"));
 
 let calendarEvents = [];
 let currentMonth = startOfMonth(new Date());
@@ -88,7 +97,6 @@ function initReadingList() {
   }
 
   addBtn.addEventListener("click", addBook);
-
   bookInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       addBook();
@@ -101,17 +109,16 @@ function initReadingList() {
       renderBooks(snapshot.docs);
     },
     (error) => {
-      console.error("读取阅读清单失败:", error);
-      bookList.innerHTML = '<li class="empty-text">读取失败，请检查 Firebase 配置和数据库规则。</li>';
+      console.error("Reading list load failed:", error);
+      bookList.innerHTML = '<li class="empty-text">\u9605\u8BFB\u6E05\u5355\u8BFB\u53D6\u5931\u8D25\u3002</li>';
     }
   );
 }
 
 async function addBook() {
   const title = bookInput.value.trim();
-
   if (!title) {
-    alert("请输入书名。");
+    alert("\u8BF7\u8F93\u5165\u4E66\u540D\u3002");
     return;
   }
 
@@ -126,8 +133,8 @@ async function addBook() {
     bookInput.value = "";
     bookInput.focus();
   } catch (error) {
-    console.error("添加书籍失败:", error);
-    alert("添加失败，请检查 Firebase 配置。");
+    console.error("Add book failed:", error);
+    alert("\u6DFB\u52A0\u4E66\u7C4D\u5931\u8D25\u3002");
   }
 }
 
@@ -137,7 +144,7 @@ function renderBooks(docs) {
   if (!docs.length) {
     const emptyLi = document.createElement("li");
     emptyLi.className = "empty-text";
-    emptyLi.textContent = "还没有添加书籍。";
+    emptyLi.textContent = "\u8FD8\u6CA1\u6709\u6DFB\u52A0\u4E66\u7C4D\u3002";
     bookList.appendChild(emptyLi);
     return;
   }
@@ -148,7 +155,6 @@ function renderBooks(docs) {
 
     const li = document.createElement("li");
     li.className = "book-item";
-
     if (book.completed) {
       li.classList.add("completed");
     }
@@ -165,24 +171,22 @@ function renderBooks(docs) {
           completed: !book.completed
         });
       } catch (error) {
-        console.error("更新书籍状态失败:", error);
-        alert("更新失败。");
+        console.error("Toggle book failed:", error);
+        alert("\u66F4\u65B0\u4E66\u7C4D\u72B6\u6001\u5931\u8D25\u3002");
       }
     });
 
     const notePreview = document.createElement("div");
     notePreview.className = "book-note-preview";
-    notePreview.textContent = book.note || "还没有备注";
-
-    headerDiv.appendChild(titleDiv);
-    headerDiv.appendChild(notePreview);
+    notePreview.textContent = book.note || "\u8FD8\u6CA1\u6709\u5907\u6CE8";
 
     const actionsDiv = document.createElement("div");
     actionsDiv.className = "book-actions";
 
     const noteBtn = document.createElement("button");
     noteBtn.className = "action-btn note-btn";
-    noteBtn.textContent = "备注";
+    noteBtn.type = "button";
+    noteBtn.textContent = "\u5907\u6CE8";
     noteBtn.addEventListener("click", (event) => {
       event.stopPropagation();
       openNoteEditor(li, bookId, book.note || "");
@@ -190,16 +194,19 @@ function renderBooks(docs) {
 
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "action-btn delete-btn";
-    deleteBtn.textContent = "删除";
+    deleteBtn.type = "button";
+    deleteBtn.textContent = "\u5220\u9664";
     deleteBtn.addEventListener("click", async () => {
       try {
         await deleteDoc(doc(db, "books", bookId));
       } catch (error) {
-        console.error("删除书籍失败:", error);
-        alert("删除失败。");
+        console.error("Delete book failed:", error);
+        alert("\u5220\u9664\u4E66\u7C4D\u5931\u8D25\u3002");
       }
     });
 
+    headerDiv.appendChild(titleDiv);
+    headerDiv.appendChild(notePreview);
     actionsDiv.appendChild(noteBtn);
     actionsDiv.appendChild(deleteBtn);
     li.appendChild(headerDiv);
@@ -216,7 +223,7 @@ function openNoteEditor(bookItem, bookId, oldNote) {
 
   const textarea = document.createElement("textarea");
   textarea.className = "book-note-input";
-  textarea.placeholder = "在这里输入备注...";
+  textarea.placeholder = "\u5728\u8FD9\u91CC\u5199\u4E0B\u5907\u6CE8...";
   textarea.value = oldNote;
 
   editorDiv.appendChild(textarea);
@@ -237,8 +244,8 @@ function openNoteEditor(bookItem, bookId, oldNote) {
         note: textarea.value.trim()
       });
     } catch (error) {
-      console.error("保存备注失败:", error);
-      alert("保存备注失败。");
+      console.error("Save note failed:", error);
+      alert("\u4FDD\u5B58\u5907\u6CE8\u5931\u8D25\u3002");
     }
 
     editorDiv.remove();
@@ -283,7 +290,6 @@ function initCalendar() {
 
   downloadIcsBtn.addEventListener("click", downloadCalendarIcs);
   appleSubscribeBtn.addEventListener("click", handleAppleSubscribe);
-
   eventForm.addEventListener("submit", handleEventSubmit);
   deleteEventBtn.addEventListener("click", handleDeleteEvent);
   closeModalBtn.addEventListener("click", closeEventModal);
@@ -308,8 +314,8 @@ function initCalendar() {
       renderCalendar();
     },
     (error) => {
-      console.error("读取日历失败:", error);
-      calendarGrid.innerHTML = '<div class="empty-text">日历读取失败，请检查 Firebase 索引与权限。</div>';
+      console.error("Calendar load failed:", error);
+      calendarGrid.innerHTML = '<div class="empty-text">\u65E5\u5386\u8BFB\u53D6\u5931\u8D25\u3002</div>';
     }
   );
 }
@@ -326,7 +332,7 @@ function renderWeekdays() {
 }
 
 function renderCalendar() {
-  calendarMonthLabel.textContent = `${currentMonth.getFullYear()} 年 ${currentMonth.getMonth() + 1} 月`;
+  calendarMonthLabel.textContent = `${currentMonth.getFullYear()}\u5E74 ${currentMonth.getMonth() + 1}\u6708`;
   calendarGrid.innerHTML = "";
 
   const firstDay = startOfMonth(currentMonth);
@@ -374,34 +380,36 @@ function createDayCell(date) {
     });
   });
 
-  header.appendChild(dayNumber);
-  header.appendChild(addButton);
-
   const eventsContainer = document.createElement("div");
   eventsContainer.className = "day-events";
 
   const dayEvents = getEventsForDate(dateKey);
-
   if (!dayEvents.length) {
     const emptyState = document.createElement("span");
     emptyState.className = "empty-text";
-    emptyState.textContent = "暂无事项";
+    emptyState.textContent = "\u6682\u65E0\u4E8B\u9879";
     eventsContainer.appendChild(emptyState);
   } else {
     dayEvents.forEach((eventItem) => {
       const pill = document.createElement("button");
       pill.className = "event-pill";
       pill.type = "button";
-      pill.innerHTML = `
-        <strong>${escapeHtml(eventItem.title)}</strong>
-        <span>${escapeHtml(formatTimeRange(eventItem))}</span>
-      `;
 
+      const title = document.createElement("strong");
+      title.textContent = eventItem.title;
+
+      const meta = document.createElement("span");
+      meta.textContent = formatTimeRange(eventItem);
+
+      pill.appendChild(title);
+      pill.appendChild(meta);
       pill.addEventListener("click", () => openEventModal(eventItem));
       eventsContainer.appendChild(pill);
     });
   }
 
+  header.appendChild(dayNumber);
+  header.appendChild(addButton);
   cell.appendChild(header);
   cell.appendChild(eventsContainer);
   return cell;
@@ -415,7 +423,9 @@ function getEventsForDate(dateKey) {
 }
 
 function compareEvents(first, second) {
-  return `${first.startTime || ""}${first.title}`.localeCompare(`${second.startTime || ""}${second.title}`, "zh-CN");
+  const firstKey = `${first.startTime || "99:99"}-${first.title || ""}`;
+  const secondKey = `${second.startTime || "99:99"}-${second.title || ""}`;
+  return firstKey.localeCompare(secondKey, "zh-CN");
 }
 
 function occursOnDate(eventItem, dateKey) {
@@ -427,18 +437,18 @@ function occursOnDate(eventItem, dateKey) {
     return true;
   }
 
+  const original = parseDateOnly(eventItem.date);
+  const target = parseDateOnly(dateKey);
+
   switch (eventItem.repeat) {
     case "daily":
       return true;
     case "weekly":
-      return new Date(eventItem.date).getDay() === new Date(dateKey).getDay();
+      return original.getDay() === target.getDay();
     case "monthly":
-      return new Date(eventItem.date).getDate() === new Date(dateKey).getDate();
-    case "yearly": {
-      const original = new Date(eventItem.date);
-      const target = new Date(dateKey);
+      return original.getDate() === target.getDate();
+    case "yearly":
       return original.getMonth() === target.getMonth() && original.getDate() === target.getDate();
-    }
     default:
       return false;
   }
@@ -447,7 +457,7 @@ function occursOnDate(eventItem, dateKey) {
 function openEventModal(eventData = {}) {
   const isEditing = Boolean(eventData.id);
 
-  modalTitle.textContent = isEditing ? "编辑事项" : "新增事项";
+  modalTitle.textContent = isEditing ? "\u7F16\u8F91\u4E8B\u9879" : "\u65B0\u589E\u4E8B\u9879";
   deleteEventBtn.classList.toggle("hidden", !isEditing);
 
   eventIdInput.value = eventData.id || "";
@@ -477,20 +487,20 @@ async function handleEventSubmit(event) {
   const payload = {
     title: eventTitleInput.value.trim(),
     date: eventDateInput.value,
-    startTime: eventStartTimeInput.value,
-    endTime: eventEndTimeInput.value,
+    startTime: eventStartTimeInput.value || "",
+    endTime: eventEndTimeInput.value || "",
     note: eventNoteInput.value.trim(),
     repeat: eventRepeatInput.value || "none",
     updatedAt: Date.now()
   };
 
   if (!payload.title || !payload.date) {
-    alert("请至少填写标题和日期。");
+    alert("\u8BF7\u81F3\u5C11\u586B\u5199\u6807\u9898\u548C\u65E5\u671F\u3002");
     return;
   }
 
   if (payload.startTime && payload.endTime && payload.endTime <= payload.startTime) {
-    alert("结束时间需要晚于开始时间。");
+    alert("\u7ED3\u675F\u65F6\u95F4\u9700\u8981\u665A\u4E8E\u5F00\u59CB\u65F6\u95F4\u3002");
     return;
   }
 
@@ -504,20 +514,16 @@ async function handleEventSubmit(event) {
       });
     }
 
-    if (payload.date) {
-      currentMonth = startOfMonth(new Date(payload.date));
-    }
-
+    currentMonth = startOfMonth(parseDateOnly(payload.date));
     closeEventModal();
   } catch (error) {
-    console.error("保存事项失败:", error);
-    alert("保存失败，请检查 Firebase 配置和数据库规则。");
+    console.error("Save event failed:", error);
+    alert("\u4FDD\u5B58\u4E8B\u9879\u5931\u8D25\u3002");
   }
 }
 
 async function handleDeleteEvent() {
   const eventId = eventIdInput.value;
-
   if (!eventId) {
     return;
   }
@@ -526,8 +532,8 @@ async function handleDeleteEvent() {
     await deleteDoc(doc(db, "calendarEvents", eventId));
     closeEventModal();
   } catch (error) {
-    console.error("删除事项失败:", error);
-    alert("删除失败。");
+    console.error("Delete event failed:", error);
+    alert("\u5220\u9664\u4E8B\u9879\u5931\u8D25\u3002");
   }
 }
 
@@ -548,7 +554,7 @@ function downloadCalendarIcs() {
 async function handleAppleSubscribe() {
   if (!APPLE_CALENDAR_FEED_URL) {
     downloadCalendarIcs();
-    alert("当前已为你导出 .ics 文件。部署 Firebase Functions 后，再把订阅地址填到 js/firebase.js 里的 APPLE_CALENDAR_FEED_URL，就能一键订阅到苹果日历。");
+    alert("\u5DF2\u4E3A\u4F60\u5BFC\u51FA .ics \u6587\u4EF6\u3002\u7B49\u8BA2\u9605\u5730\u5740\u914D\u7F6E\u597D\u4E4B\u540E\uFF0C\u8FD9\u91CC\u5C31\u80FD\u4E00\u952E\u6253\u5F00\u82F9\u679C\u65E5\u5386\u8BA2\u9605\u3002");
     return;
   }
 
@@ -557,7 +563,7 @@ async function handleAppleSubscribe() {
   try {
     await navigator.clipboard.writeText(subscribeUrl);
   } catch (error) {
-    console.warn("复制订阅地址失败:", error);
+    console.warn("Copy URL failed:", error);
   }
 
   window.open(subscribeUrl, "_blank");
@@ -565,11 +571,11 @@ async function handleAppleSubscribe() {
 
 function refreshAppleSubscribeState() {
   if (!APPLE_CALENDAR_FEED_URL) {
-    appleSyncHint.textContent = "目前已支持导出 .ics 文件。把 Firebase Functions 的公开订阅地址填进配置后，这里会直接一键唤起 Apple 日历订阅。";
+    appleSyncHint.textContent = "\u76EE\u524D\u53EF\u4EE5\u5148\u5BFC\u51FA .ics \u6587\u4EF6\u3002\u90E8\u7F72\u8BA2\u9605\u94FE\u63A5\u540E\uFF0C\u8FD9\u91CC\u4F1A\u76F4\u63A5\u5524\u8D77 Apple \u65E5\u5386\u8BA2\u9605\u3002";
     return;
   }
 
-  appleSyncHint.textContent = `Apple 订阅地址已就绪：${APPLE_CALENDAR_FEED_URL}`;
+  appleSyncHint.textContent = `Apple \u8BA2\u9605\u5730\u5740\u5DF2\u5C31\u7EEA\uFF1A${APPLE_CALENDAR_FEED_URL}`;
 }
 
 function buildCalendarIcs(events) {
@@ -579,7 +585,7 @@ function buildCalendarIcs(events) {
     "PRODID:-//My Site Calendar//CN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-WR-CALNAME:我的实时日历"
+    "X-WR-CALNAME:\u5F20\u823B\u6E90\u7684\u5B9E\u65F6\u65E5\u5386"
   ];
 
   events.forEach((eventItem) => {
@@ -602,7 +608,7 @@ function buildCalendarIcs(events) {
       lines.push(`DTEND;VALUE=DATE:${formatDateForIcs(addDays(eventItem.date, 1))}`);
     }
 
-    lines.push(`SUMMARY:${escapeIcsText(eventItem.title)}`);
+    lines.push(`SUMMARY:${escapeIcsText(eventItem.title || "\u672A\u547D\u540D\u4E8B\u9879")}`);
 
     if (eventItem.note) {
       lines.push(`DESCRIPTION:${escapeIcsText(eventItem.note)}`);
@@ -653,7 +659,7 @@ function formatEventDateTime(dateString, timeString, fallbackEnd = false) {
 }
 
 function formatDateForIcs(dateString) {
-  const date = new Date(dateString);
+  const date = parseDateOnly(dateString);
   return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
 }
 
@@ -673,10 +679,10 @@ function toIcsUtc(date) {
 function formatTimeRange(eventItem) {
   const timeLabel = eventItem.startTime
     ? `${eventItem.startTime}${eventItem.endTime ? ` - ${eventItem.endTime}` : ""}`
-    : "全天";
+    : "\u5168\u5929";
 
   if (eventItem.repeat && eventItem.repeat !== "none") {
-    return `${timeLabel} · ${REPEAT_LABELS[eventItem.repeat] || "重复"}`;
+    return `${timeLabel} | ${REPEAT_LABELS[eventItem.repeat] || "\u91CD\u590D"}`;
   }
 
   return timeLabel;
@@ -695,7 +701,7 @@ function formatDateForInput(date) {
 }
 
 function addDays(dateString, days) {
-  const date = new Date(dateString);
+  const date = parseDateOnly(dateString);
   date.setDate(date.getDate() + days);
   return formatDateForInput(date);
 }
@@ -707,17 +713,13 @@ function addHour(timeString) {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-function pad(value) {
-  return String(value).padStart(2, "0");
+function parseDateOnly(dateString) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+function pad(value) {
+  return String(value).padStart(2, "0");
 }
 
 function escapeIcsText(value) {

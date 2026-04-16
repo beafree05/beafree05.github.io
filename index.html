@@ -3,40 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>张博源的网站</title>
+  <title>&#x5F20;&#x823B;&#x6E90;&#x7684;&#x5C0F;&#x7A7A;&#x95F4;</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <div class="watercolor watercolor-a"></div>
+  <div class="watercolor watercolor-b"></div>
+  <div class="watercolor watercolor-c"></div>
+
   <div class="app">
     <aside class="sidebar">
-      <div class="logo">张博源的网站</div>
+      <div class="sidebar-art">
+        <img
+          class="sidebar-photo"
+          src="./0e8a82dc7d6c3acd671f11ee2404b03.png"
+          alt="&#x6C38;&#x96CF;&#x5854;&#x83F2;&#x98CE;&#x683C;&#x5E94;&#x63F4;&#x56FE;"
+        />
+        <div class="fan-note">
+          <strong>&#x5355;&#x63A8;&#x5C0F;&#x5361;</strong>
+          <span>&#x6C38;&#x96CF;&#x5854;&#x83F2; / TAFFY / &#x67D4;&#x7C89;&#x624B;&#x5E10;</span>
+        </div>
+      </div>
+
+      <div class="logo">
+        <span class="logo-eyebrow">&#x4E2A;&#x4EBA;&#x5C0F;&#x7AD9;</span>
+        <strong>&#x5F20;&#x823B;&#x6E90;</strong>
+      </div>
 
       <nav class="menu">
-        <button class="menu-btn active" data-page="home">首页</button>
-        <button class="menu-btn" data-page="reading">阅读清单</button>
-        <button class="menu-btn" data-page="calendar">实时日历</button>
-        <button class="menu-btn" data-page="about">关于我</button>
+        <button class="menu-btn active" data-page="home">&#x9996;&#x9875;</button>
+        <button class="menu-btn" data-page="reading">&#x9605;&#x8BFB;&#x6E05;&#x5355;</button>
+        <button class="menu-btn" data-page="calendar">&#x5B9E;&#x65F6;&#x65E5;&#x5386;</button>
+        <button class="menu-btn" data-page="about">&#x5173;&#x4E8E;&#x6211;</button>
       </nav>
     </aside>
 
     <main class="main">
       <section id="home" class="page active">
         <div class="card hero-card">
-          <p class="eyebrow">Personal Dashboard</p>
-          <h1>欢迎来到我的网站</h1>
+          <p class="eyebrow">TAFFY FAN SPACE</p>
+          <h1>&#x6B22;&#x8FCE;&#x6765;&#x5230;&#x5F20;&#x823B;&#x6E90;&#x7684;&#x5C0F;&#x7A7A;&#x95F4;</h1>
           <p class="hero-text">
-            这里可以管理阅读清单，也可以直接在网页里维护一份会实时同步的日历事项。
+            &#x8FD9;&#x91CC;&#x662F;&#x4E00;&#x4E2A;&#x5E26;&#x7740;&#x67D4;&#x7C89;&#x6C14;&#x6C1B;&#x7684;&#x4E2A;&#x4EBA;&#x89D2;&#x843D;&#x3002;
+            &#x4F60;&#x53EF;&#x4EE5;&#x8BB0;&#x5F55;&#x9605;&#x8BFB;&#x3001;&#x7EF4;&#x62A4;&#x65E5;&#x7A0B;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x628A;&#x5B83;&#x5F53;&#x6210;&#x4E00;&#x4E2A;&#x5C5E;&#x4E8E;&#x81EA;&#x5DF1;&#x7684;&#x624B;&#x5E10;&#x5F0F;&#x4E3B;&#x9875;&#x3002;
           </p>
+
+          <div class="hero-tags">
+            <span>&#x67D4;&#x7C89;&#x624B;&#x5E10;</span>
+            <span>&#x5B9E;&#x65F6;&#x540C;&#x6B65;</span>
+            <span>&#x82F9;&#x679C;&#x65E5;&#x5386;&#x5173;&#x8054;</span>
+          </div>
         </div>
       </section>
 
       <section id="reading" class="page">
         <div class="card">
-          <h2>阅读清单</h2>
+          <h2>&#x9605;&#x8BFB;&#x6E05;&#x5355;</h2>
 
           <div class="input-area">
-            <input id="bookInput" type="text" placeholder="输入书名" />
-            <button id="addBtn">添加</button>
+            <input id="bookInput" type="text" placeholder="&#x8F93;&#x5165;&#x4E66;&#x540D;" />
+            <button id="addBtn" type="button">&#x6DFB;&#x52A0;</button>
           </div>
 
           <ul id="bookList"></ul>
@@ -47,29 +73,31 @@
         <div class="card calendar-card">
           <div class="calendar-topbar">
             <div>
-              <p class="eyebrow">Realtime Calendar</p>
-              <h2>实时日历</h2>
+              <p class="eyebrow">REALTIME CALENDAR</p>
+              <h2>&#x5B9E;&#x65F6;&#x65E5;&#x5386;</h2>
             </div>
 
             <div class="calendar-actions">
-              <button id="prevMonthBtn" class="secondary-btn" type="button">上个月</button>
-              <button id="todayBtn" class="secondary-btn" type="button">今天</button>
-              <button id="nextMonthBtn" class="secondary-btn" type="button">下个月</button>
-              <button id="newEventBtn" class="primary-btn" type="button">新增事项</button>
+              <button id="prevMonthBtn" class="secondary-btn" type="button">&#x4E0A;&#x4E2A;&#x6708;</button>
+              <button id="todayBtn" class="secondary-btn" type="button">&#x4ECA;&#x5929;</button>
+              <button id="nextMonthBtn" class="secondary-btn" type="button">&#x4E0B;&#x4E2A;&#x6708;</button>
+              <button id="newEventBtn" class="primary-btn" type="button">&#x65B0;&#x589E;&#x4E8B;&#x9879;</button>
             </div>
           </div>
 
           <div class="calendar-sync-bar">
             <div>
               <div id="calendarMonthLabel" class="calendar-month"></div>
-              <p class="calendar-hint">事项保存到 Firebase 后会实时同步到所有登录同一数据源的设备。</p>
+              <p class="calendar-hint">
+                &#x65E5;&#x5386;&#x4F1A;&#x4FDD;&#x5B58;&#x5230; Firebase &#x5E76;&#x5B9E;&#x65F6;&#x540C;&#x6B65;&#xFF0C;&#x540C;&#x4E00;&#x4EFD;&#x6570;&#x636E;&#x5728;&#x5176;&#x4ED6;&#x8BBE;&#x5907;&#x4E0A;&#x4E5F;&#x80FD;&#x770B;&#x5230;&#x3002;
+              </p>
             </div>
 
             <div class="apple-sync-box">
-              <button id="downloadIcsBtn" class="secondary-btn" type="button">导出 Apple 日历文件</button>
-              <button id="appleSubscribeBtn" class="primary-btn" type="button">一键关联苹果日历</button>
+              <button id="downloadIcsBtn" class="secondary-btn" type="button">&#x5BFC;&#x51FA; Apple &#x65E5;&#x5386;&#x6587;&#x4EF6;</button>
+              <button id="appleSubscribeBtn" class="primary-btn" type="button">&#x4E00;&#x952E;&#x5173;&#x8054;&#x82F9;&#x679C;&#x65E5;&#x5386;</button>
               <p id="appleSyncHint" class="calendar-hint">
-                部署订阅链接后，iPhone 可通过系统“日历订阅”长期同步这份日历。
+                &#x90E8;&#x7F72;&#x8BA2;&#x9605;&#x94FE;&#x63A5;&#x540E;&#xFF0C;iPhone &#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x628A;&#x8FD9;&#x4EFD;&#x65E5;&#x5386;&#x52A0;&#x5165;&#x81EA;&#x5E26;&#x65E5;&#x5386;&#x3002;
               </p>
             </div>
           </div>
@@ -81,8 +109,10 @@
 
       <section id="about" class="page">
         <div class="card">
-          <h2>关于我</h2>
-          <p>这里以后可以写你的个人介绍、兴趣和学习方向。</p>
+          <h2>&#x5173;&#x4E8E;&#x6211;</h2>
+          <p>
+            &#x8FD9;&#x91CC;&#x53EF;&#x4EE5;&#x6162;&#x6162;&#x5199;&#x4E0B;&#x5F20;&#x823B;&#x6E90;&#x7684;&#x5174;&#x8DA3;&#x3001;&#x5B66;&#x4E60;&#x65B9;&#x5411;&#x548C;&#x65E5;&#x5E38;&#x8BB0;&#x5F55;&#x3002;
+          </p>
         </div>
       </section>
     </main>
@@ -93,59 +123,59 @@
     <div class="modal-panel">
       <div class="modal-header">
         <div>
-          <p class="eyebrow">Calendar Event</p>
-          <h3 id="modalTitle">新增事项</h3>
+          <p class="eyebrow">CALENDAR EVENT</p>
+          <h3 id="modalTitle">&#x65B0;&#x589E;&#x4E8B;&#x9879;</h3>
         </div>
-        <button id="closeModalBtn" class="icon-btn" type="button" aria-label="关闭">×</button>
+        <button id="closeModalBtn" class="icon-btn" type="button" aria-label="&#x5173;&#x95ED;">x</button>
       </div>
 
       <form id="eventForm" class="event-form">
         <input id="eventId" type="hidden" />
 
         <label>
-          <span>标题</span>
+          <span>&#x6807;&#x9898;</span>
           <input id="eventTitle" name="title" type="text" required />
         </label>
 
         <div class="form-grid">
           <label>
-            <span>日期</span>
+            <span>&#x65E5;&#x671F;</span>
             <input id="eventDate" name="date" type="date" required />
           </label>
 
           <label>
-            <span>是否重复</span>
+            <span>&#x662F;&#x5426;&#x91CD;&#x590D;</span>
             <select id="eventRepeat" name="repeat">
-              <option value="none">不重复</option>
-              <option value="daily">每天</option>
-              <option value="weekly">每周</option>
-              <option value="monthly">每月</option>
-              <option value="yearly">每年</option>
+              <option value="none">&#x4E0D;&#x91CD;&#x590D;</option>
+              <option value="daily">&#x6BCF;&#x5929;</option>
+              <option value="weekly">&#x6BCF;&#x5468;</option>
+              <option value="monthly">&#x6BCF;&#x6708;</option>
+              <option value="yearly">&#x6BCF;&#x5E74;</option>
             </select>
           </label>
         </div>
 
         <div class="form-grid">
           <label>
-            <span>开始时间</span>
+            <span>&#x5F00;&#x59CB;&#x65F6;&#x95F4;</span>
             <input id="eventStartTime" name="startTime" type="time" />
           </label>
 
           <label>
-            <span>结束时间</span>
+            <span>&#x7ED3;&#x675F;&#x65F6;&#x95F4;</span>
             <input id="eventEndTime" name="endTime" type="time" />
           </label>
         </div>
 
         <label>
-          <span>备注</span>
-          <textarea id="eventNote" name="note" rows="4" placeholder="记录地点、提醒内容或其他备注"></textarea>
+          <span>&#x5907;&#x6CE8;</span>
+          <textarea id="eventNote" name="note" rows="4" placeholder="&#x53EF;&#x4EE5;&#x5199;&#x5730;&#x70B9;&#x3001;&#x63D0;&#x9192;&#x6216;&#x5176;&#x4ED6;&#x5185;&#x5BB9;"></textarea>
         </label>
 
         <div class="modal-actions">
-          <button id="deleteEventBtn" class="danger-btn hidden" type="button">删除事项</button>
-          <button class="secondary-btn" type="button" data-close-modal="true">取消</button>
-          <button class="primary-btn" type="submit">保存事项</button>
+          <button id="deleteEventBtn" class="danger-btn hidden" type="button">&#x5220;&#x9664;&#x4E8B;&#x9879;</button>
+          <button class="secondary-btn" type="button" data-close-modal="true">&#x53D6;&#x6D88;</button>
+          <button class="primary-btn" type="submit">&#x4FDD;&#x5B58;&#x4E8B;&#x9879;</button>
         </div>
       </form>
     </div>
