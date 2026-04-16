@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="app">
-    <!-- 左侧导航栏 -->
     <aside class="sidebar">
       <div class="logo">张舫源的网站</div>
 
@@ -20,9 +19,7 @@
       </nav>
     </aside>
 
-    <!-- 右侧主内容区 -->
     <main class="main">
-      <!-- 首页 -->
       <section id="home" class="page active">
         <div class="card">
           <h1>欢迎来到我的网站</h1>
@@ -30,31 +27,30 @@
         </div>
       </section>
 
-      <!-- 阅读清单 -->
       <section id="reading" class="page">
         <div class="card">
           <h2>阅读清单</h2>
-          <div id="reading-app"></div>
+
+          <div class="input-area">
+            <input id="bookInput" type="text" placeholder="输入书名" />
+            <button id="addBtn">添加</button>
+          </div>
+
+          <ul id="bookList"></ul>
         </div>
       </section>
 
-      <!-- 待办事项 -->
       <section id="todo" class="page">
         <div class="card">
           <h2>待办事项</h2>
-          <div id="todo-app">
-            <p>这个功能以后再加。</p>
-          </div>
+          <p>这个功能以后再扩展。</p>
         </div>
       </section>
 
-      <!-- 关于我 -->
       <section id="about" class="page">
         <div class="card">
           <h2>关于我</h2>
-          <div id="about-app">
-            <p>这里以后可以写自我介绍、兴趣、学习方向。</p>
-          </div>
+          <p>这里以后可以写你的个人介绍、兴趣和学习方向。</p>
         </div>
       </section>
     </main>
