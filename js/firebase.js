@@ -12,4 +12,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
 export const db = getFirestore(app);
+
+// 部署 Firebase Functions 后，把这个地址改成真实的公开 HTTPS 链接。
+// iPhone 订阅时会自动转成 webcal:// 协议。
+export const APPLE_CALENDAR_FEED_URL = "";

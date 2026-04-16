@@ -3,34 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>张舫源的网站</title>
+  <title>张博源的网站</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div class="app">
-    <!-- 左侧导航栏 -->
     <aside class="sidebar">
-      <div class="logo">张舫源的网站</div>
+      <div class="logo">张博源的网站</div>
 
       <nav class="menu">
         <button class="menu-btn active" data-page="home">首页</button>
         <button class="menu-btn" data-page="reading">阅读清单</button>
-        <button class="menu-btn" data-page="todo">待办事项</button>
+        <button class="menu-btn" data-page="calendar">实时日历</button>
         <button class="menu-btn" data-page="about">关于我</button>
       </nav>
     </aside>
 
-    <!-- 右侧内容区 -->
     <main class="main">
-      <!-- 首页 -->
       <section id="home" class="page active">
-        <div class="card">
+        <div class="card hero-card">
+          <p class="eyebrow">Personal Dashboard</p>
           <h1>欢迎来到我的网站</h1>
-          <p>这里是主页面，以后你可以从左边进入不同功能。</p>
+          <p class="hero-text">
+            这里可以管理阅读清单，也可以直接在网页里维护一份会实时同步的日历事项。
+          </p>
         </div>
       </section>
 
-      <!-- 阅读清单 -->
       <section id="reading" class="page">
         <div class="card">
           <h2>阅读清单</h2>
@@ -44,15 +43,42 @@
         </div>
       </section>
 
-      <!-- 待办事项 -->
-      <section id="todo" class="page">
-        <div class="card">
-          <h2>待办事项</h2>
-          <p>这个功能以后再扩展。</p>
+      <section id="calendar" class="page">
+        <div class="card calendar-card">
+          <div class="calendar-topbar">
+            <div>
+              <p class="eyebrow">Realtime Calendar</p>
+              <h2>实时日历</h2>
+            </div>
+
+            <div class="calendar-actions">
+              <button id="prevMonthBtn" class="secondary-btn" type="button">上个月</button>
+              <button id="todayBtn" class="secondary-btn" type="button">今天</button>
+              <button id="nextMonthBtn" class="secondary-btn" type="button">下个月</button>
+              <button id="newEventBtn" class="primary-btn" type="button">新增事项</button>
+            </div>
+          </div>
+
+          <div class="calendar-sync-bar">
+            <div>
+              <div id="calendarMonthLabel" class="calendar-month"></div>
+              <p class="calendar-hint">事项保存到 Firebase 后会实时同步到所有登录同一数据源的设备。</p>
+            </div>
+
+            <div class="apple-sync-box">
+              <button id="downloadIcsBtn" class="secondary-btn" type="button">导出 Apple 日历文件</button>
+              <button id="appleSubscribeBtn" class="primary-btn" type="button">一键关联苹果日历</button>
+              <p id="appleSyncHint" class="calendar-hint">
+                部署订阅链接后，iPhone 可通过系统“日历订阅”长期同步这份日历。
+              </p>
+            </div>
+          </div>
+
+          <div class="weekday-row" id="weekdayRow"></div>
+          <div class="calendar-grid" id="calendarGrid"></div>
         </div>
       </section>
 
-      <!-- 关于我 -->
       <section id="about" class="page">
         <div class="card">
           <h2>关于我</h2>
@@ -60,6 +86,69 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="eventModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="true"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Calendar Event</p>
+          <h3 id="modalTitle">新增事项</h3>
+        </div>
+        <button id="closeModalBtn" class="icon-btn" type="button" aria-label="关闭">×</button>
+      </div>
+
+      <form id="eventForm" class="event-form">
+        <input id="eventId" type="hidden" />
+
+        <label>
+          <span>标题</span>
+          <input id="eventTitle" name="title" type="text" required />
+        </label>
+
+        <div class="form-grid">
+          <label>
+            <span>日期</span>
+            <input id="eventDate" name="date" type="date" required />
+          </label>
+
+          <label>
+            <span>是否重复</span>
+            <select id="eventRepeat" name="repeat">
+              <option value="none">不重复</option>
+              <option value="daily">每天</option>
+              <option value="weekly">每周</option>
+              <option value="monthly">每月</option>
+              <option value="yearly">每年</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            <span>开始时间</span>
+            <input id="eventStartTime" name="startTime" type="time" />
+          </label>
+
+          <label>
+            <span>结束时间</span>
+            <input id="eventEndTime" name="endTime" type="time" />
+          </label>
+        </div>
+
+        <label>
+          <span>备注</span>
+          <textarea id="eventNote" name="note" rows="4" placeholder="记录地点、提醒内容或其他备注"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button id="deleteEventBtn" class="danger-btn hidden" type="button">删除事项</button>
+          <button class="secondary-btn" type="button" data-close-modal="true">取消</button>
+          <button class="primary-btn" type="submit">保存事项</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script type="module" src="js/app.js"></script>
