@@ -2,157 +2,129 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>阅读清单</title>
+<title>阅读清单（云端版）</title>
+
 <style>
 body {
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     text-align: center;
     background: #f5f5f5;
-    margin: 0;
-    padding: 40px 20px;
-}
-
-h1 {
-    margin-bottom: 30px;
-}
-
-.input-area {
-    margin-bottom: 20px;
 }
 
 input {
     padding: 10px;
-    width: 240px;
-    font-size: 16px;
+    width: 200px;
 }
 
 button {
-    padding: 10px 14px;
-    margin-left: 6px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-ul {
-    list-style: none;
-    padding: 0;
-    max-width: 500px;
-    margin: 0 auto;
+    padding: 10px;
+    margin-left: 5px;
 }
 
 li {
+    margin: 10px;
     background: white;
-    margin: 10px 0;
-    padding: 12px 14px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-}
-
-.book-text {
-    flex: 1;
-    text-align: left;
-    cursor: pointer;
-    font-size: 16px;
+    padding: 10px;
+    border-radius: 5px;
+    list-style: none;
 }
 
 .done {
     text-decoration: line-through;
     color: gray;
 }
-
-.delete-btn {
-    margin-left: 10px;
-}
 </style>
+
 </head>
+
 <body>
 
-<h1>📚 我的阅读清单</h1>
+<h1>📚 云端阅读清单</h1>
 
-<div class="input-area">
-    <input id="bookInput" type="text" placeholder="输入书名">
-    <button onclick="addBook()">添加</button>
-</div>
+<input id="bookInput" placeholder="输入书名">
+<button onclick="addBook()">添加</button>
 
 <ul id="list"></ul>
 
-<script>
-let books = [];
+<script type="module">
+// Firebase 引入
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// 页面一打开就读取保存的数据
-window.onload = function () {
-    const savedBooks = localStorage.getItem("readingList");
-    if (savedBooks) {
-        books = JSON.parse(savedBooks);
-        renderList();
-    }
+// 你的配置（已填好）
+const firebaseConfig = {
+  apiKey: "AIzaSyAs1iWrVR1E4IRcIPvkGrS61NmNRR3oS_0",
+  authDomain: "reading-list-for-sairyushi.firebaseapp.com",
+  projectId: "reading-list-for-sairyushi",
+  storageBucket: "reading-list-for-sairyushi.firebasestorage.app",
+  messagingSenderId: "115198998780",
+  appId: "1:115198998780:web:f20f230757aa2b570cbf79"
 };
 
-// 保存到浏览器
-function saveBooks() {
-    localStorage.setItem("readingList", JSON.stringify(books));
-}
+// 初始化
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// 渲染整个列表
-function renderList() {
+// 渲染列表
+async function loadBooks() {
     const list = document.getElementById("list");
     list.innerHTML = "";
 
-    for (let i = 0; i < books.length; i++) {
-        const li = document.createElement("li");
+    const querySnapshot = await getDocs(collection(db, "books"));
 
-        const span = document.createElement("span");
-        span.textContent = books[i].name;
-        span.className = "book-text";
+    querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const id = docSnap.id;
 
-        if (books[i].done) {
+        let li = document.createElement("li");
+
+        let span = document.createElement("span");
+        span.textContent = data.name;
+
+        if (data.done) {
             span.classList.add("done");
         }
 
-        // 点击切换已读/未读
-        span.onclick = function () {
-            books[i].done = !books[i].done;
-            saveBooks();
-            renderList();
+        // 切换已读
+        span.onclick = async () => {
+            await updateDoc(doc(db, "books", id), {
+                done: !data.done
+            });
+            loadBooks();
         };
 
         // 删除按钮
-        const delBtn = document.createElement("button");
+        let delBtn = document.createElement("button");
         delBtn.textContent = "❌";
-        delBtn.className = "delete-btn";
-        delBtn.onclick = function () {
-            books.splice(i, 1);
-            saveBooks();
-            renderList();
+        delBtn.onclick = async () => {
+            await deleteDoc(doc(db, "books", id));
+            loadBooks();
         };
 
         li.appendChild(span);
         li.appendChild(delBtn);
         list.appendChild(li);
-    }
+    });
 }
 
-// 添加书籍
-function addBook() {
-    const input = document.getElementById("bookInput");
-    const bookName = input.value.trim();
+// 添加书
+async function addBook() {
+    let input = document.getElementById("bookInput");
+    let bookName = input.value;
 
-    if (bookName === "") {
-        return;
-    }
+    if (bookName === "") return;
 
-    books.push({
+    await addDoc(collection(db, "books"), {
         name: bookName,
         done: false
     });
 
-    saveBooks();
-    renderList();
     input.value = "";
+    loadBooks();
 }
+
+// 初始加载
+loadBooks();
 </script>
 
 </body>
