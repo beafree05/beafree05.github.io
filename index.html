@@ -135,7 +135,8 @@ import {
     doc,
     updateDoc,
     query,
-    orderBy
+    orderBy,
+    onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -151,21 +152,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let booksCache = [];
+let unsubscribe = null;
 
-async function loadBooks() {
+function renderList() {
     const list = document.getElementById("list");
     list.innerHTML = "";
-
-    const q = query(collection(db, "books"), orderBy("order"));
-    const querySnapshot = await getDocs(q);
-
-    booksCache = [];
-    querySnapshot.forEach((docSnap) => {
-        booksCache.push({
-            id: docSnap.id,
-            ...docSnap.data()
-        });
-    });
 
     booksCache.forEach((book, index) => {
         const li = document.createElement("li");
@@ -188,7 +179,7 @@ async function loadBooks() {
             await updateDoc(doc(db, "books", book.id), {
                 done: !book.done
             });
-            loadBooks();
+            // 不再调用 loadBooks()，实时监听会自动更新
         };
 
         const actions = document.createElement("div");
@@ -199,14 +190,12 @@ async function loadBooks() {
         editBtn.onclick = async () => {
             const newName = prompt("请输入新的书名：", book.name);
             if (newName === null) return;
-
             const trimmedName = newName.trim();
             if (trimmedName === "") return;
-
             await updateDoc(doc(db, "books", book.id), {
                 name: trimmedName
             });
-            loadBooks();
+            // 不再调用 loadBooks()
         };
 
         const noteBtn = document.createElement("button");
@@ -214,11 +203,10 @@ async function loadBooks() {
         noteBtn.onclick = async () => {
             const newNote = prompt("请输入新的注释：", book.note || "");
             if (newNote === null) return;
-
             await updateDoc(doc(db, "books", book.id), {
                 note: newNote
             });
-            loadBooks();
+            // 不再调用 loadBooks()
         };
 
         const upBtn = document.createElement("button");
@@ -240,7 +228,7 @@ async function loadBooks() {
         delBtn.onclick = async () => {
             await deleteDoc(doc(db, "books", book.id));
             await reindexOrdersAfterDelete();
-            loadBooks();
+            // 不再调用 loadBooks()，实时监听会自动更新
         };
 
         actions.appendChild(editBtn);
@@ -277,6 +265,24 @@ async function loadBooks() {
     });
 }
 
+async function loadBooks() {
+    if (unsubscribe) {
+        unsubscribe();
+    }
+
+    const q = query(collection(db, "books"), orderBy("order"));
+    unsubscribe = onSnapshot(q, (querySnapshot) => {
+        booksCache = [];
+        querySnapshot.forEach((docSnap) => {
+            booksCache.push({
+                id: docSnap.id,
+                ...docSnap.data()
+            });
+        });
+        renderList();
+    });
+}
+
 async function swapOrder(indexA, indexB) {
     const bookA = booksCache[indexA];
     const bookB = booksCache[indexB];
@@ -288,8 +294,7 @@ async function swapOrder(indexA, indexB) {
     await updateDoc(doc(db, "books", bookB.id), {
         order: bookA.order
     });
-
-    loadBooks();
+    // 不再调用 loadBooks()，实时监听会自动更新
 }
 
 async function reindexOrdersAfterDelete() {
@@ -323,7 +328,7 @@ window.addBook = async function () {
     });
 
     input.value = "";
-    loadBooks();
+    // 不再调用 loadBooks()，实时监听会自动更新
 };
 
 loadBooks();
