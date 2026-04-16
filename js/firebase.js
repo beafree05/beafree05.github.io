@@ -1,9 +1,6 @@
-// Firebase 初始化（浏览器版本）
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// 你的配置（不用改）
 const firebaseConfig = {
   apiKey: "AIzaSyCSmV7ziEee3P5Al1re2BLA-TT0mBwSUaE",
   authDomain: "sairyushi-readinglist.firebaseapp.com",
@@ -14,8 +11,5 @@ const firebaseConfig = {
   measurementId: "G-WYGE8B1976"
 };
 
-// 初始化
 const app = initializeApp(firebaseConfig);
-
-// Firestore 数据库
 export const db = getFirestore(app);
