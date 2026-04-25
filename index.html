@@ -33,6 +33,7 @@
       <nav class="menu">
         <button class="menu-btn active" data-page="home">&#x9996;&#x9875;</button>
         <button class="menu-btn" data-page="reading">&#x9605;&#x8BFB;&#x6E05;&#x5355;</button>
+        <button class="menu-btn" data-page="vocab">&#x65E5;&#x8BED;&#x8BCD;&#x6C47;</button>
         <button class="menu-btn" data-page="calendar">&#x5B9E;&#x65F6;&#x65E5;&#x5386;</button>
         <button class="menu-btn" data-page="about">&#x5173;&#x4E8E;&#x6211;</button>
       </nav>
@@ -66,6 +67,59 @@
           </div>
 
           <ul id="bookList"></ul>
+        </div>
+      </section>
+
+      <section id="vocab" class="page">
+        <div class="card vocab-card">
+          <div class="vocab-hero">
+            <div>
+              <p class="eyebrow">JAPANESE VOCAB LAB</p>
+              <h2>&#x9AD8;&#x7EA7;&#x65E5;&#x8BED;&#x8BCD;&#x6C47;&#x5206;&#x6790;&#x533A;</h2>
+              <p class="vocab-intro">
+                &#x8F93;&#x5165;&#x65E5;&#x8BED;&#x5355;&#x8BCD;&#x3001;&#x77ED;&#x8BED;&#x6216;&#x8868;&#x8FBE;&#xFF0C;&#x9875;&#x9762;&#x4F1A;&#x6309;&#x4F60;&#x65B0;&#x7684;&#x8981;&#x6C42;&#x8F93;&#x51FA;&#x3010;1&#x3011;&#x5230;&#x3010;8&#x3011;&#x7684;&#x5B66;&#x4E60;&#x8005;&#x5411;&#x5206;&#x6790;&#x7ED3;&#x679C;&#x3002;
+              </p>
+            </div>
+
+            <button id="fillSampleBtn" class="secondary-btn" type="button">&#x586B;&#x5145;&#x793A;&#x4F8B;</button>
+          </div>
+
+          <div class="vocab-layout">
+            <div class="vocab-panel">
+              <label class="vocab-label" for="jpWordInput">
+                <span>&#x76EE;&#x6807;&#x8868;&#x8FBE;</span>
+                <input id="jpWordInput" type="text" placeholder="&#x4F8B;&#xFF1A;&#x5FD6;&#x5EA6; / &#x30D0;&#x30BA;&#x308B; / &#x30A8;&#x30E2;&#x3044;" />
+              </label>
+
+              <label class="vocab-label" for="contextNoteInput">
+                <span>&#x8865;&#x5145;&#x8BED;&#x5883;&#xFF08;&#x53EF;&#x9009;&#xFF09;</span>
+                <textarea id="contextNoteInput" rows="7" placeholder="&#x53EF;&#x4EE5;&#x5199;&#xFF1A;&#x4F60;&#x5728;&#x54EA;&#x91CC;&#x770B;&#x5230;&#x8FD9;&#x4E2A;&#x8BCD;&#x3001;&#x60F3;&#x77E5;&#x9053;&#x5B83;&#x662F;&#x5426;&#x9002;&#x5408;&#x9762;&#x8BD5;/ES/&#x8BBA;&#x6587;&#x4F7F;&#x7528;&#x3001;&#x6216;&#x8005;&#x60F3;&#x533A;&#x5206;&#x5B83;&#x548C;&#x8FD1;&#x4E49;&#x8BCD;&#x7684;&#x8BED;&#x611F;&#x5DEE;&#x522B;&#x3002;"></textarea>
+              </label>
+
+              <div class="vocab-note-box">
+                <strong>&#x8F93;&#x51FA;&#x65B9;&#x5411;</strong>
+                <p>
+                  &#x9875;&#x9762;&#x4F1A;&#x6309;&#x300C;&#x57FA;&#x672C;&#x4FE1;&#x606F;&#x300D;&#x3001;&#x300C;&#x8F9E;&#x4E66;&#x5F0F;&#x89E3;&#x91CA;&#x300D;&#x3001;&#x300C;&#x4E2D;&#x6587;&#x89E3;&#x91CA;&#x300D;&#x3001;&#x300C;&#x8BED;&#x611F;&#x4E0E;&#x4F7F;&#x7528;&#x573A;&#x666F;&#x300D;&#x3001;&#x300C;&#x4F8B;&#x53E5;&#x300D;&#x3001;&#x300C;&#x96BE;&#x5EA6;&#x5206;&#x6790;&#x300D;&#x3001;&#x300C;&#x8FD1;&#x4E49;&#x8BCD;&#x6BD4;&#x8F83;&#x300D;&#x3001;&#x300C;&#x5B66;&#x4E60;&#x5EFA;&#x8BAE;&#x300D;&#x8F93;&#x51FA;&#x3002;
+                </p>
+              </div>
+
+              <div class="vocab-actions">
+                <button id="analyzeWordBtn" class="primary-btn" type="button">&#x751F;&#x6210;&#x8BCD;&#x6C47;&#x62A5;&#x544A;</button>
+                <button id="copyPromptBtn" class="secondary-btn" type="button">&#x590D;&#x5236; AI &#x63D0;&#x793A;&#x8BCD;</button>
+              </div>
+            </div>
+
+            <div class="vocab-panel vocab-result-panel">
+              <div class="result-chip-row">
+                <span id="readingChip" class="result-chip">&#x8BFB;&#x97F3;&#xFF1A;-</span>
+                <span id="usageChip" class="result-chip soft">&#x4E3B;&#x52A8;&#x4F7F;&#x7528;&#xFF1A;-</span>
+              </div>
+
+              <div id="vocabResult" class="analysis-output">
+                <p class="empty-text">&#x8F93;&#x5165;&#x76EE;&#x6807;&#x8868;&#x8FBE;&#x540E;&#xFF0C;&#x8FD9;&#x91CC;&#x4F1A;&#x751F;&#x6210;&#x9002;&#x5408; N1 &#x5DE6;&#x53F3;&#x5B66;&#x4E60;&#x8005;&#x9605;&#x8BFB;&#x7684;&#x516B;&#x680F;&#x5206;&#x6790;&#x7ED3;&#x679C;&#x3002;</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

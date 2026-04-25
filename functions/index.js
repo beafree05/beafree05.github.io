@@ -34,6 +34,54 @@ exports.appleCalendarFeed = onRequest(
   }
 );
 
+exports.dictionaryLookup = onRequest(
+  {
+    region: "asia-northeast1",
+    invoker: "public"
+  },
+  async (request, response) => {
+    setCorsHeaders(response);
+
+    if (request.method === "OPTIONS") {
+      response.status(204).send("");
+      return;
+    }
+
+    if (request.method !== "GET") {
+      response.status(405).json({ error: "Method not allowed." });
+      return;
+    }
+
+    const term = String(request.query.term || "").trim();
+    if (!term) {
+      response.status(400).json({ error: "Missing term." });
+      return;
+    }
+
+    try {
+      const remoteResponse = await fetch(`https://kotobank.jp/word/${encodeURIComponent(term)}`, {
+        headers: {
+          "User-Agent": "my-site-dictionary-lookup/1.0"
+        },
+        redirect: "follow"
+      });
+
+      if (!remoteResponse.ok) {
+        response.status(502).json({ error: "Dictionary upstream request failed." });
+        return;
+      }
+
+      const html = await remoteResponse.text();
+      const payload = extractKotobankEntry(html, remoteResponse.url, term);
+      response.set("Cache-Control", "public, max-age=1800");
+      response.status(200).json(payload);
+    } catch (error) {
+      console.error("Dictionary lookup failed:", error);
+      response.status(500).json({ error: "Unable to load dictionary entry." });
+    }
+  }
+);
+
 function buildCalendarIcs(events) {
   const lines = [
     "BEGIN:VCALENDAR",
@@ -72,6 +120,92 @@ function buildCalendarIcs(events) {
 
   lines.push("END:VCALENDAR");
   return `${lines.join("\r\n")}\r\n`;
+}
+
+function setCorsHeaders(response) {
+  response.set("Access-Control-Allow-Origin", "*");
+  response.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+  response.set("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function extractKotobankEntry(html, finalUrl, term) {
+  const title = decodeHtml(matchFirst(html, /<title>([\s\S]*?)<\/title>/i) || "");
+  const headingText = decodeHtml(matchFirst(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i) || "");
+  const cleanedHeading = stripTags(headingText).replace(/\s+/g, " ").trim();
+
+  const headingMatch = cleanedHeading.match(/^(.+?)\uFF08\u8AAD\u307F\uFF09(.+)$/);
+  const reading = headingMatch ? headingMatch[2].trim() : "\u8981\u78BA\u8A8D";
+  const writing = headingMatch ? headingMatch[1].trim() : term;
+
+  const dictionaries = Array.from(
+    html.matchAll(/<h2[^>]*>[\s\S]*?\u300c[^\u300d]+\u300d\u306e\u610f\u5473[^<]*<\/h2>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/gi)
+  )
+    .slice(0, 3)
+    .map((match) => {
+      const subheading = stripTags(decodeHtml(match[1])).replace(/\s+/g, " ").trim();
+      const definition = stripTags(decodeHtml(match[2])).replace(/\s+/g, " ").trim();
+      return {
+        subheading,
+        definition
+      };
+    })
+    .filter((item) => item.subheading || item.definition);
+
+  const firstDefinition = dictionaries[0] ? dictionaries[0].definition : "";
+  const partOfSpeech = inferPartOfSpeechFromDefinition(firstDefinition);
+
+  return {
+    source: "Kotobank",
+    finalUrl,
+    title,
+    writing,
+    reading,
+    partOfSpeech,
+    definitions: dictionaries
+  };
+}
+
+function inferPartOfSpeechFromDefinition(text) {
+  if (!text) {
+    return "\u8981\u78BA\u8A8D";
+  }
+
+  const mapping = [
+    { token: "\uFF3B\u540D\uFF3D", label: "\u540D\u8A5E" },
+    { token: "\uFF3B\u52D5", label: "\u52D5\u8A5E" },
+    { token: "\uFF3B\u5F62\u52D5", label: "\u5F62\u5BB9\u52D5\u8A5E" },
+    { token: "\uFF3B\u5F62\uFF3D", label: "\u5F62\u5BB9\u8A5E" },
+    { token: "\u3018 \u540D\u8A5E \u3019", label: "\u540D\u8A5E" },
+    { token: "\u3018 \u52D5\u8A5E \u3019", label: "\u52D5\u8A5E" },
+    { token: "\u3018 \u5F62\u5BB9\u8A5E \u3019", label: "\u5F62\u5BB9\u8A5E" }
+  ];
+
+  const found = mapping.find((item) => text.includes(item.token));
+  return found ? found.label : "\u8981\u78BA\u8A8D";
+}
+
+function matchFirst(text, pattern) {
+  const match = text.match(pattern);
+  return match ? match[1] : "";
+}
+
+function stripTags(value) {
+  return String(value || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function decodeHtml(value) {
+  return String(value || "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
 
 function repeatToRRule(repeat) {
