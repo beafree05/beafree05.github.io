@@ -1,4 +1,5 @@
 import { db, APPLE_CALENDAR_FEED_URL } from "./firebase.js";
+import { buildReportFromJMdict, lookupJMdictEntries } from "./jmdict-workbench.js";
 import {
   addDoc,
   collection,
@@ -43,6 +44,7 @@ const fillSampleBtn = document.getElementById("fillSampleBtn");
 const vocabResult = document.getElementById("vocabResult");
 const readingChip = document.getElementById("readingChip");
 const usageChip = document.getElementById("usageChip");
+const recentTerms = document.getElementById("recentTerms");
 
 const calendarGrid = document.getElementById("calendarGrid");
 const weekdayRow = document.getElementById("weekdayRow");
@@ -338,20 +340,28 @@ function initVocabJudge() {
     !fillSampleBtn ||
     !vocabResult ||
     !readingChip ||
-    !usageChip
+    !usageChip ||
+    !recentTerms
   ) {
     return;
   }
 
+  renderRecentTerms();
   renderVocabularyReport(createEmptyVocabularyReport());
 
-  analyzeWordBtn.addEventListener("click", () => {
-    const report = buildVocabularyReport({
+  analyzeWordBtn.addEventListener("click", async () => {
+    analyzeWordBtn.disabled = true;
+    analyzeWordBtn.textContent = "\u67e5\u8bcd\u4e2d...";
+
+    const report = await buildVocabularyReportAsync({
       word: jpWordInput.value,
       contextNote: contextNoteInput.value
     });
 
+    saveRecentTerm(report.input || jpWordInput.value.trim());
     renderVocabularyReport(report);
+    analyzeWordBtn.disabled = false;
+    analyzeWordBtn.textContent = "\u751f\u6210\u8bcd\u6c47\u62a5\u544a";
   });
 
   copyPromptBtn.addEventListener("click", async () => {
@@ -374,15 +384,16 @@ function initVocabJudge() {
     }
   });
 
-  fillSampleBtn.addEventListener("click", () => {
+  fillSampleBtn.addEventListener("click", async () => {
     jpWordInput.value = "\u5fd6\u5ea6";
     contextNoteInput.value = "\u60f3\u77e5\u9053\u8fd9\u4e2a\u8bcd\u80fd\u4e0d\u80fd\u7528\u5728\u9762\u8bd5\u3001ES \u548c\u65b0\u95fb\u8bc4\u8bba\u91cc\uff0c\u4e5f\u60f3\u533a\u5206\u5b83\u548c\u300c\u914d\u616e\u300d\u3001\u300c\u7a7a\u6c17\u3092\u8aad\u3080\u300d\u7684\u5dee\u522b\u3002";
 
-    const report = buildVocabularyReport({
+    const report = await buildVocabularyReportAsync({
       word: jpWordInput.value,
       contextNote: contextNoteInput.value
     });
 
+    saveRecentTerm(report.input || jpWordInput.value.trim());
     renderVocabularyReport(report);
   });
 }
@@ -509,50 +520,58 @@ function buildVocabularyReport({ word, contextNote }) {
   return createFallbackVocabularyReport(rawWord, note, normalized);
 }
 
+async function buildVocabularyReportAsync({ word, contextNote }) {
+  const rawWord = (word || "").trim();
+  const note = (contextNote || "").trim();
+
+  if (!rawWord) {
+    return createEmptyVocabularyReport();
+  }
+
+  const normalized = normalizeJapaneseLemma(rawWord);
+  const lookupResult = await lookupJMdictEntries(rawWord, normalized);
+  const staticEntry = VOCAB_LIBRARY[rawWord] || VOCAB_LIBRARY[normalized] || null;
+
+  if (lookupResult.entries.length) {
+    const dictionaryReport = buildReportFromJMdict(rawWord, note, lookupResult);
+    if (staticEntry) {
+      return mergeLibraryAndDictionaryReport(rawWord, note, staticEntry, dictionaryReport);
+    }
+    return dictionaryReport;
+  }
+
+  const fallbackReport = buildVocabularyReport({ word: rawWord, contextNote: note });
+  fallbackReport.suggestions = lookupResult.suggestions || [];
+  fallbackReport.sourceType = "fallback";
+  return fallbackReport;
+}
+
+function mergeLibraryAndDictionaryReport(rawWord, note, libraryEntry, dictionaryReport) {
+  return {
+    ...dictionaryReport,
+    ...libraryEntry,
+    input: rawWord,
+    contextNote: note,
+    writing: dictionaryReport.writing || libraryEntry.writing,
+    reading: dictionaryReport.reading || libraryEntry.reading,
+    partOfSpeech: dictionaryReport.partOfSpeech || libraryEntry.partOfSpeech,
+    frequency: dictionaryReport.frequency || libraryEntry.frequency,
+    coreDefinitionJa: dictionaryReport.coreDefinitionJa || (libraryEntry.dictExplanation && libraryEntry.dictExplanation[0]) || "",
+    glossDefinitionsEn: dictionaryReport.glossDefinitionsEn || [],
+    dictExplanation: dictionaryReport.dictExplanation.length ? dictionaryReport.dictExplanation : libraryEntry.dictExplanation,
+    sourceType: "jmdict+mock",
+    suggestions: dictionaryReport.suggestions || [],
+    sourceSummary: dictionaryReport.sourceSummary || "基础信息来自 JMdict，本页的高级分析由本地 mock 生成。"
+  };
+}
+
 function renderVocabularyReport(report) {
   readingChip.textContent = `\u8bfb\u97f3\uff1a${report.reading || "\u8981\u78ba\u8a8d"}`;
   usageChip.textContent = `\u4e3b\u52a8\u4f7f\u7528\uff1a${report.activeUse || "\u8981\u78ba\u8a8d"}`;
   const dictionaryLinksMarkup = buildExternalDictionaryLinks(report.input || report.writing || "");
-
-  const dictMarkup = report.dictExplanation
-    .map((item, index) => `<div class="analysis-list-item"><strong>${index + 1}.</strong><span>${escapeHtml(item)}</span></div>`)
-    .join("");
-
-  const scenesMarkup = [
-    `- \u65e5\u5e38\u4f1a\u8bdd\uff1a${report.usage.daily}`,
-    `- SNS / \u7f51\u7edc\uff1a${report.usage.sns}`,
-    `- \u65b0\u95fb\u8bc4\u8bba\uff1a${report.usage.news}`,
-    `- \u5546\u52a1\uff1a${report.usage.business}`,
-    `- \u5b66\u672f / \u8bba\u6587\uff1a${report.usage.academic}`,
-    `- \u9762\u8bd5 / ES\uff1a${report.usage.interview}`,
-    `- \u9002\u5408\u4e3b\u52a8\u4f7f\u7528\uff1a${report.activeUse}`,
-    `- \u4e0d\u9002\u5408\u7684\u573a\u666f\uff1a${report.notFitScenes}`
-  ].map((item) => `<div class="analysis-list-item"><span>${escapeHtml(item)}</span></div>`).join("");
-
-  const examplesMarkup = report.examples
-    .map(
-      (example) => `
-        <div class="example-item">
-          <strong>${escapeHtml(example.label)}</strong>
-          <span>${escapeHtml(example.ja)}</span>
-          <span>${escapeHtml(example.zh)}</span>
-        </div>
-      `
-    )
-    .join("");
-
-  const difficultyMarkup = report.examples
-    .map(
-      (example, index) => `
-        <div class="analysis-list-item">
-          <strong>${index + 1}. ${escapeHtml(example.label)}</strong>
-          <span>\u96be\u5ea6\uff1a${escapeHtml(example.difficulty)}</span>
-          <span>\u4e3a\u4ec0\u4e48\uff1a${escapeHtml(example.why)}</span>
-          <span>\u5bf9 N1 \u5b66\u4e60\u8005\u662f\u5426\u9002\u5408\u6a21\u4eff\uff1a${escapeHtml(example.mimic)}</span>
-          <span>\u66ff\u4ee3\u8868\u8fbe\uff1a${escapeHtml(example.alternative || "\u65e0\u9700\u66ff\u6362")}</span>
-        </div>
-      `
-    )
+  const workbenchMarkup = buildWorkbenchMarkup(report);
+  const englishGlossMarkup = (report.glossDefinitionsEn || [])
+    .map((item) => `<span class="inline-pill">${escapeHtml(item)}</span>`)
     .join("");
 
   const synonymMarkup = report.synonyms
@@ -573,23 +592,17 @@ function renderVocabularyReport(report) {
     </div>
     <div class="analysis-block">
       <div class="analysis-title">\u30102. \u8f9e\u4e66\u5f0f\u89e3\u91ca\u3011</div>
-      <div class="analysis-list">${dictMarkup}</div>
-    </div>
-    <div class="analysis-block">
-      <div class="analysis-title">\u30103. \u4e2d\u6587\u89e3\u91ca\u3011</div>
-      <div class="analysis-text">${escapeHtml(report.cnExplanation)}</div>
-    </div>
-    <div class="analysis-block">
-      <div class="analysis-title">\u30104. \u8bed\u611f\u4e0e\u4f7f\u7528\u573a\u666f\u3011</div>
-      <div class="analysis-list">${scenesMarkup}</div>
-    </div>
-    <div class="analysis-block">
-      <div class="analysis-title">\u30105. \u65e5\u672c\u672c\u571f\u81ea\u7136\u4f8b\u53e5\u3011</div>
-      <div class="example-list">${examplesMarkup}</div>
-    </div>
-    <div class="analysis-block">
-      <div class="analysis-title">\u30106. \u4f8b\u53e5\u96be\u5ea6\u5206\u6790\u3011</div>
-      <div class="analysis-list">${difficultyMarkup}</div>
+      <div class="analysis-list">
+        <div class="analysis-list-item">
+          <strong>\u7b2c\u4e00\u5c42\uff08\u6838\u5fc3\u89e3\u91ca / \u65e5\u8bed\uff09</strong>
+          <span>${escapeHtml(report.coreDefinitionJa || (report.dictExplanation && report.dictExplanation[0]) || "\u8981\u8fdb\u4e00\u6b65\u786e\u8ba4")}</span>
+        </div>
+        <div class="analysis-list-item">
+          <strong>\u7b2c\u4e8c\u5c42\uff08\u8f85\u52a9\u7406\u89e3 / English\uff09</strong>
+          <span>\u8fd1\u3044\u610f\u5473\uff1a</span>
+          <div class="inline-pill-row">${englishGlossMarkup || '<span class="inline-pill">need confirmation</span>'}</div>
+        </div>
+      </div>
     </div>
     <div class="analysis-block">
       <div class="analysis-title">\u30107. \u8fd1\u4e49\u8bcd\u6bd4\u8f83\u3011</div>
@@ -600,8 +613,12 @@ function renderVocabularyReport(report) {
       <div class="analysis-text">${escapeHtml(report.advice)}</div>
     </div>
     <div class="analysis-block">
-      <div class="analysis-title">\u5916\u90e8\u8f9e\u4e66\u68c0\u7d22</div>
-      <div class="analysis-text">\u7531\u4e8e\u5f53\u524d\u4e0d\u4f7f\u7528 Firebase Functions\uff0c\u9875\u9762\u4e0d\u4f1a\u81ea\u52a8\u6293\u53d6\u5916\u90e8\u8f9e\u4e66\uff0c\u4f46\u4f60\u53ef\u4ee5\u76f4\u63a5\u70b9\u51fb\u4e0b\u9762\u7684\u771f\u5b9e\u8f9e\u4e66\u94fe\u63a5\u3002</div>
+      <div class="analysis-title">\u5de5\u4f5c\u53f0\u9644\u52a0\u4fe1\u606f</div>
+      <div class="analysis-text">${escapeHtml(report.sourceSummary || "\u5f53\u524d\u7ed3\u679c\u4ee5 JMdict \u4e3a\u4e3b\u3002")}</div>
+      <div class="workbench-grid">${workbenchMarkup}</div>
+    </div>
+    <div class="analysis-block">
+      <div class="analysis-title">\u8865\u5145\u53c2\u8003</div>
       <div class="analysis-list">${dictionaryLinksMarkup}</div>
     </div>
     ${report.contextNote ? `
@@ -647,6 +664,108 @@ function buildExternalDictionaryLinks(word) {
       `
     )
     .join("");
+}
+
+function buildWorkbenchMarkup(report) {
+  const term = report.input || report.writing || "";
+  const safeReading = report.reading === "\u8981\u78ba\u8a8d"
+    ? "\u672c\u5730 JMdict \u6ca1\u80fd\u7a33\u5b9a\u7ed9\u51fa\u8bfb\u97f3\uff0c\u9700\u8981\u989d\u5916\u4ea4\u53c9\u786e\u8ba4"
+    : `\u5f53\u524d\u53ef\u6682\u6309\u300c${report.reading}\u300d\u7406\u89e3`;
+  const usageAdvice = report.activeUse === "\u662f"
+    ? "\u53ef\u4ee5\u5f00\u59cb\u7ec3\u4e60\u4e3b\u52a8\u9020\u53e5\uff0c\u4f46\u8981\u4fdd\u6301\u8bed\u57df\u4e00\u81f4"
+    : report.activeUse === "\u9700\u8b66\u614e"
+      ? "\u5efa\u8bae\u5148\u5f53\u7406\u89e3\u578b\u8bcd\u6c47\uff0c\u4e0d\u8981\u7acb\u5373\u62ff\u53bb\u9762\u8bd5\u6216 ES \u91cc\u7528"
+      : "\u5148\u4f5c\u4e3a\u88ab\u52a8\u8bc6\u522b\u8bcd\u5904\u7406";
+  const nextSteps = [
+    `\u78ba\u8a8d\u8bfb\u97f3\uff1a${safeReading}`,
+    `\u786e\u8ba4\u8bed\u57df\uff1a${report.notFitScenes}`,
+    `\u4f18\u5148\u89c2\u5bdf\u7b2c 2 / 3 \u4e2a\u4f8b\u53e5\uff0c\u770b\u5b83\u5982\u4f55\u5728\u65b0\u95fb\u548c\u7a0d\u6b63\u5f0f\u6587\u4f53\u91cc\u51fa\u73b0`,
+    `\u4f7f\u7528\u7b56\u7565\uff1a${usageAdvice}`
+  ];
+  const searchTerms = [
+    `"${term}" \u8aad\u307f\u65b9`,
+    `"${term}" \u4f7f\u3044\u65b9`,
+    `"${term}" \u4f8b\u6587`,
+    `"${term}" \u9762\u63a5 ES \u4e0d\u81ea\u7136`
+  ];
+  const suggestionMarkup = (report.suggestions && report.suggestions.length)
+    ? `<p>\u53ef\u80fd\u7684 JMdict \u5019\u9009\u8bcd\u6761\uff1a${escapeHtml(report.suggestions.join(" / "))}</p>`
+    : `<p>\u5f53\u524d\u5df2${report.sourceType && report.sourceType.startsWith("jmdict") ? "\u547d\u4e2d" : "\u672a\u7a33\u5b9a\u547d\u4e2d"} JMdict \u8bcd\u6761\u3002\u672c\u9875\u4f1a\u4f18\u5148\u4ee5\u672c\u5730\u8bcd\u5178\u7ed3\u679c\u4f5c\u4e3a\u6838\u5fc3\u4f9d\u636e\u3002</p>`;
+
+  return `
+    <div class="workbench-card">
+      <strong>\u5de5\u4f5c\u53f0\u8def\u5f84</strong>
+      <ol class="workbench-list">
+        <li>\u5148\u7528 JMdict \u786e\u5b9a\u8bcd\u5f62\u3001\u8bfb\u97f3\u3001\u57fa\u672c\u4e49\u9879</li>
+        <li>\u518d\u770b\u4f7f\u7528\u573a\u666f\uff0c\u5224\u65ad\u8fd9\u4e2a\u8bcd\u662f\u201c\u53ea\u8ba4\u8bc6\u201d\u8fd8\u662f\u201c\u53ef\u4e3b\u52a8\u4f7f\u7528\u201d</li>
+        <li>\u6700\u540e\u518d\u628a AI \u751f\u6210\u7684\u4f8b\u53e5\u5f53\u6210\u6a21\u4eff\u7ec3\u4e60\u6750\u6599\uff0c\u4e0d\u662f\u8bcd\u5178\u66ff\u4ee3\u54c1</li>
+      </ol>
+    </div>
+    <div class="workbench-card">
+      <strong>\u5f53\u524d\u5224\u65ad\u91cd\u70b9</strong>
+      <ol class="workbench-list">
+        ${nextSteps.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ol>
+    </div>
+    <div class="workbench-card">
+      <strong>\u63a8\u8350\u67e5\u8bcd\u52a8\u4f5c</strong>
+      <ol class="workbench-list">
+        ${searchTerms.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ol>
+    </div>
+    <div class="workbench-card">
+      <strong>\u5b66\u4e60\u7b56\u7565</strong>
+      <p>\u8bf7\u4e00\u8d77\u8bb0\u4e0b\uff1a\u8bfb\u97f3 + \u8bed\u57df + \u4e0d\u81ea\u7136\u573a\u5408 + \u66ff\u4ee3\u8868\u8fbe\u3002\u8fd9\u6837\u4f60\u5b66\u7684\u5c31\u4e0d\u53ea\u662f\u201c\u8fd9\u4e2a\u8bcd\u4ec0\u4e48\u610f\u601d\u201d\uff0c\u800c\u662f\u201c\u8fd9\u4e2a\u8bcd\u4ec0\u4e48\u65f6\u5019\u80fd\u7528\u3001\u600e\u4e48\u7528\u66f4\u81ea\u7136\u201d\u3002</p>
+      ${suggestionMarkup}
+    </div>
+  `;
+}
+
+function saveRecentTerm(term) {
+  const value = String(term || "").trim();
+  if (!value) {
+    return;
+  }
+
+  const key = "jp-vocab-recent-terms";
+  const current = readRecentTerms();
+  const next = [value, ...current.filter((item) => item !== value)].slice(0, 8);
+  localStorage.setItem(key, JSON.stringify(next));
+  renderRecentTerms();
+}
+
+function readRecentTerms() {
+  const key = "jp-vocab-recent-terms";
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn("Read recent terms failed:", error);
+    return [];
+  }
+}
+
+function renderRecentTerms() {
+  const terms = readRecentTerms();
+  recentTerms.innerHTML = "";
+
+  if (!terms.length) {
+    recentTerms.innerHTML = '<span class="empty-text">\u8fd8\u6ca1\u6709\u67e5\u8be2\u8bb0\u5f55</span>';
+    return;
+  }
+
+  terms.forEach((term) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "term-chip";
+    button.textContent = term;
+    button.addEventListener("click", () => {
+      jpWordInput.value = term;
+      jpWordInput.focus();
+    });
+    recentTerms.appendChild(button);
+  });
 }
 
 function openNoteEditor(bookItem, bookId, oldNote) {
@@ -1315,7 +1434,10 @@ function createEmptyVocabularyReport() {
       }
     ],
     advice: "\u8bf7\u5148\u8f93\u5165\u76ee\u6807\u8868\u8fbe\u3002",
-    contextNote: ""
+    contextNote: "",
+    suggestions: [],
+    sourceType: "empty",
+    sourceSummary: "\u8f93\u5165\u76ee\u6807\u8bcd\u540e\uff0c\u672c\u5730 JMdict \u4f1a\u5148\u63d0\u4f9b\u8bcd\u5178\u57fa\u7840\u5c42\uff0cAI \u53ea\u8d1f\u8d23\u4f8b\u53e5\u3001\u96be\u5ea6\u5206\u6790\u548c\u4f7f\u7528\u573a\u666f\u3002"
   };
 }
 
@@ -1385,7 +1507,10 @@ function createFallbackVocabularyReport(rawWord, note, normalized) {
       }
     ],
     advice: `\u8fd9\u4e2a\u8bcd\u73b0\u5728\u5e94\u8be5\u5148\u5f53\u6210\u201c\u5f85\u786e\u8ba4\u8bcd\u201d\u6765\u5b66\uff1a\u5148\u67e5\u8bfb\u97f3\u3001\u770b\u771f\u5b9e\u4f8b\u53e5\u3001\u786e\u8ba4\u8bed\u57df\uff0c\u7b49\u4f60\u80fd\u7a33\u5b9a\u5224\u65ad\u5b83\u9002\u5408\u51fa\u73b0\u5728\u54ea\u79cd\u573a\u5408\u4e4b\u540e\uff0c\u518d\u8003\u8651\u4e3b\u52a8\u4f7f\u7528\u3002`,
-    contextNote: note
+    contextNote: note,
+    suggestions: [],
+    sourceType: "fallback",
+    sourceSummary: "\u672c\u5730 JMdict \u6682\u672a\u7a33\u5b9a\u547d\u4e2d\u5f53\u524d\u8bcd\u6761\uff0c\u56e0\u6b64\u6b64\u9875\u7ed9\u51fa\u7684\u662f\u4fdd\u5b88\u7248\u5b66\u4e60\u5206\u6790\uff0c\u4e0d\u5efa\u8bae\u76f4\u63a5\u62ff\u53bb\u505a\u6b63\u5f0f\u8f93\u51fa\u4f9d\u636e\u3002"
   };
 }
 
