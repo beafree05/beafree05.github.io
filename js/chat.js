@@ -79,7 +79,8 @@ async function handleSubmit(event) {
     setStatus("永雏塔菲主题 AI 刚刚回复了你", "success");
   } catch (error) {
     console.error("Persona chat failed:", error);
-    setStatus("刚才没接上话，再试一次好不好？", "error");
+    const detail = error instanceof Error && error.message ? `：${error.message}` : "";
+    setStatus(`没有收到 AI 回复${detail}`, "error");
   } finally {
     setPending(false);
     renderMessages();
@@ -120,13 +121,19 @@ async function requestReply(message, history) {
 
 function buildChatEndpoints() {
   const endpoints = [];
-  const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const hostname = window.location.hostname.toLowerCase();
+  const isLocal =
+    !hostname ||
+    ["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(hostname) ||
+    /^10\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
 
   if (isLocal) {
-    endpoints.push(`${window.location.origin}/api/persona-chat`);
-    if (window.location.origin !== "http://127.0.0.1:4173") {
-      endpoints.push(LOCAL_PERSONA_CHAT_URL);
+    if (["http:", "https:"].includes(window.location.protocol)) {
+      endpoints.push(`${window.location.origin}/api/persona-chat`);
     }
+    endpoints.push(LOCAL_PERSONA_CHAT_URL);
   }
 
   endpoints.push(PERSONA_CHAT_URL);
@@ -168,7 +175,9 @@ function setPending(nextPending) {
   chat.dom.clear.disabled = nextPending;
   chat.dom.typing.hidden = !nextPending;
   chat.dom.send.firstChild.textContent = nextPending ? "思考中 " : "发送 ";
-  setStatus(nextPending ? "正在组织语言……" : "对话只保存在本次浏览器会话中");
+  if (nextPending) {
+    setStatus("正在组织语言……");
+  }
 }
 
 function setStatus(message, type = "") {
