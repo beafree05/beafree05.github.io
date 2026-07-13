@@ -1,4 +1,5 @@
-import { LOCAL_PERSONA_CHAT_URL, PERSONA_CHAT_URL } from "./firebase.js";
+const PERSONA_CHAT_URL = "https://asia-northeast1-sairyushi-readinglist.cloudfunctions.net/personaChat";
+const LOCAL_PERSONA_CHAT_URL = "http://127.0.0.1:4173/api/persona-chat";
 
 const STORAGE_KEY = "taffy-theme-chat-session-v1";
 const MAX_HISTORY = 12;
@@ -35,6 +36,7 @@ function initPersonaChat() {
   renderMessages();
 
   chat.dom.form.addEventListener("submit", handleSubmit);
+  chat.dom.send.addEventListener("click", () => chat.dom.form.requestSubmit());
   chat.dom.clear.addEventListener("click", clearConversation);
   chat.dom.input.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
