@@ -40,6 +40,10 @@ button {
   cursor: pointer;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .watercolor {
   position: fixed;
   border-radius: 999px;

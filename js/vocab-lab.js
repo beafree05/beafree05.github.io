@@ -60,8 +60,6 @@ export function initVocabLab() {
     recordList: document.getElementById("recordList"),
     recordListTitle: document.getElementById("recordListTitle"),
     recordListMeta: document.getElementById("recordListMeta"),
-    exportStartDate: document.getElementById("exportStartDate"),
-    exportEndDate: document.getElementById("exportEndDate"),
     exportTxtBtn: document.getElementById("exportTxtBtn"),
     exportConfirmMenu: document.getElementById("exportConfirmMenu"),
     exportMenuStartDate: document.getElementById("exportMenuStartDate"),
@@ -203,7 +201,7 @@ function bindStaticEvents() {
   });
 
   exportTxtBtn?.addEventListener("click", () => {
-    toggleExportMenu(true);
+    toggleExportMenu(!vocabLab.state.exportMenuOpen);
   });
 
   confirmExportBtn?.addEventListener("click", () => {
@@ -1216,8 +1214,8 @@ function buildRecordListTitle() {
 }
 
 function exportRecordsAsText() {
-  const startDate = vocabLab.dom.exportMenuStartDate?.value || vocabLab.dom.exportStartDate?.value || "";
-  const endDate = vocabLab.dom.exportMenuEndDate?.value || vocabLab.dom.exportEndDate?.value || "";
+  const startDate = vocabLab.dom.exportMenuStartDate?.value || "";
+  const endDate = vocabLab.dom.exportMenuEndDate?.value || "";
 
   if (!startDate || !endDate) {
     vocabLab.state.exportInfo = "请先选择开始日期和结束日期。";
@@ -1262,20 +1260,14 @@ function exportRecordsAsText() {
 function toggleExportMenu(nextOpen) {
   vocabLab.state.exportMenuOpen = nextOpen;
   if (nextOpen) {
-    const startDate = vocabLab.dom.exportStartDate?.value || "";
-    const endDate = vocabLab.dom.exportEndDate?.value || "";
+    const startDate = vocabLab.dom.exportMenuStartDate?.value || formatDate(Date.now());
+    const endDate = vocabLab.dom.exportMenuEndDate?.value || startDate;
     syncExportDates(startDate, endDate);
   }
   renderExportBar();
 }
 
 function syncExportDates(startDate, endDate) {
-  if (vocabLab.dom.exportStartDate) {
-    vocabLab.dom.exportStartDate.value = startDate || "";
-  }
-  if (vocabLab.dom.exportEndDate) {
-    vocabLab.dom.exportEndDate.value = endDate || "";
-  }
   if (vocabLab.dom.exportMenuStartDate) {
     vocabLab.dom.exportMenuStartDate.value = startDate || "";
   }
