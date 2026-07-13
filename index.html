@@ -355,6 +355,32 @@
   </div>
 
   <script src="https://unpkg.com/wanakana"></script>
+  <script>
+    (function () {
+      const menuButtons = Array.from(document.querySelectorAll(".menu-btn"));
+      const pages = Array.from(document.querySelectorAll(".page"));
+
+      function switchPage(targetPage) {
+        if (!targetPage) {
+          return;
+        }
+
+        menuButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.page === targetPage);
+        });
+
+        pages.forEach((page) => {
+          page.classList.toggle("active", page.id === targetPage);
+        });
+      }
+
+      menuButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          switchPage(button.dataset.page || "home");
+        });
+      });
+    })();
+  </script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
