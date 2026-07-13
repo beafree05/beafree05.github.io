@@ -1,4 +1,4 @@
-import { db, VOCAB_ANALYZE_URL } from "./firebase.js";
+import { db, LOCAL_VOCAB_ANALYZE_URL, VOCAB_ANALYZE_URL } from "./firebase.js";
 import {
   addDoc,
   collection,
@@ -86,6 +86,7 @@ function createInitialState() {
     activeTab: "lookup",
     lookupLoading: false,
     lookupError: "",
+    lookupInfo: "",
     recordFilter: "due",
     recordSort: "reviewSoon",
     recordSearch: "",
@@ -240,21 +241,34 @@ async function handleLookup() {
 
   vocabLab.state.lookupLoading = true;
   vocabLab.state.lookupError = "";
+  vocabLab.state.lookupInfo = "";
   renderLookupPanel();
 
   try {
     const report = await requestVocabularyReport(word, contextNote);
-    const recordId = await saveLookupRecord(word, contextNote, report);
-
     vocabLab.state.currentReport = {
       ...report,
       inputWord: word,
       contextNote,
-      recordId
+      recordId: ""
     };
-    vocabLab.state.currentRecordId = recordId;
-    await loadDetailEvents(recordId);
+    vocabLab.state.lookupLoading = false;
     renderAll();
+
+    try {
+      const recordId = await saveLookupRecord(word, contextNote, report);
+      vocabLab.state.currentReport = {
+        ...vocabLab.state.currentReport,
+        recordId
+      };
+      vocabLab.state.currentRecordId = recordId;
+      await loadDetailEvents(recordId);
+      renderAll();
+    } catch (saveError) {
+      console.error("Vocabulary record save failed:", saveError);
+      vocabLab.state.lookupInfo = "讲解已经生成，但学习记录暂时没有成功保存。";
+      renderLookupPanel();
+    }
   } catch (error) {
     console.error("Vocabulary lookup failed:", error);
     vocabLab.state.lookupError = error.message || "DeepSeek 查询失败，请稍后再试。";
@@ -266,24 +280,49 @@ async function handleLookup() {
 }
 
 async function requestVocabularyReport(word, contextNote) {
-  const response = await fetch(VOCAB_ANALYZE_URL || DEFAULT_FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      word,
-      contextNote
-    })
-  });
+  const endpoints = buildAnalyzeEndpoints();
+  let lastError = null;
 
-  const payload = await response.json().catch(() => ({}));
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          word,
+          contextNote
+        })
+      });
 
-  if (!response.ok) {
-    throw new Error(payload.error || "DeepSeek 接口暂时不可用。");
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || `词汇讲解接口不可用：${response.status}`);
+      }
+
+      return normalizeAnalysisPayload(payload.report || payload, word, contextNote);
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  return normalizeAnalysisPayload(payload.report || payload, word, contextNote);
+  throw lastError || new Error("DeepSeek 接口暂时不可用。");
+}
+
+function buildAnalyzeEndpoints() {
+  const endpoints = [];
+  const protocol = window.location.protocol;
+  const isLocalHttp = protocol.startsWith("http") && ["127.0.0.1", "localhost"].includes(window.location.hostname);
+
+  if (isLocalHttp) {
+    endpoints.push(`${window.location.origin}/api/vocab-analyze`);
+  }
+
+  endpoints.push(LOCAL_VOCAB_ANALYZE_URL);
+  endpoints.push(VOCAB_ANALYZE_URL || DEFAULT_FUNCTION_URL);
+
+  return [...new Set(endpoints.filter(Boolean))];
 }
 
 async function saveLookupRecord(word, contextNote, report) {
@@ -794,6 +833,8 @@ function renderLookupPanel() {
 
   if (vocabLab.state.lookupError) {
     vocabLab.dom.lookupStatus.textContent = vocabLab.state.lookupError;
+  } else if (vocabLab.state.lookupInfo) {
+    vocabLab.dom.lookupStatus.textContent = vocabLab.state.lookupInfo;
   } else {
     vocabLab.dom.lookupStatus.textContent = "每次查询都会直连 DeepSeek，返回新的词汇讲解与学习建议。";
   }
