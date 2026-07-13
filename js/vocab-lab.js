@@ -60,6 +60,15 @@ export function initVocabLab() {
     recordList: document.getElementById("recordList"),
     recordListTitle: document.getElementById("recordListTitle"),
     recordListMeta: document.getElementById("recordListMeta"),
+    exportStartDate: document.getElementById("exportStartDate"),
+    exportEndDate: document.getElementById("exportEndDate"),
+    exportTxtBtn: document.getElementById("exportTxtBtn"),
+    exportConfirmMenu: document.getElementById("exportConfirmMenu"),
+    exportMenuStartDate: document.getElementById("exportMenuStartDate"),
+    exportMenuEndDate: document.getElementById("exportMenuEndDate"),
+    confirmExportBtn: document.getElementById("confirmExportBtn"),
+    cancelExportBtn: document.getElementById("cancelExportBtn"),
+    exportStatus: document.getElementById("exportStatus"),
     bulkBar: document.getElementById("bulkBar"),
     bulkCount: document.getElementById("bulkCount"),
     detailPanel: document.getElementById("recordDetailPanel")
@@ -87,6 +96,8 @@ function createInitialState() {
     lookupLoading: false,
     lookupError: "",
     lookupInfo: "",
+    exportInfo: "",
+    exportMenuOpen: false,
     recordFilter: "due",
     recordSort: "reviewSoon",
     recordSearch: "",
@@ -115,7 +126,10 @@ function bindStaticEvents() {
     recordSortSelect,
     manageRecordsBtn,
     recordFilters,
-    bulkBar
+    bulkBar,
+    exportTxtBtn,
+    confirmExportBtn,
+    cancelExportBtn
   } = vocabLab.dom;
 
   lookupTabBtn?.addEventListener("click", () => switchTab("lookup"));
@@ -188,7 +202,20 @@ function bindStaticEvents() {
     await runBulkAction(actionBtn.dataset.bulkAction || "", selectedIds);
   });
 
+  exportTxtBtn?.addEventListener("click", () => {
+    toggleExportMenu(true);
+  });
+
+  confirmExportBtn?.addEventListener("click", () => {
+    exportRecordsAsText();
+  });
+
+  cancelExportBtn?.addEventListener("click", () => {
+    toggleExportMenu(false);
+  });
+
   vocabLab.root?.addEventListener("click", handleDelegatedClick);
+  document.addEventListener("click", handleDocumentClick);
 }
 
 function subscribeRealtimeCollections() {
@@ -861,6 +888,7 @@ function renderLookupPanel() {
   const record = getMergedRecordById(report.recordId);
   const learningBanner = buildLearningBanner(record);
   const actionBar = buildLookupActionBar(record);
+  const questionBlock = buildQuestionAnswerBlock(report);
 
   vocabLab.dom.lookupResult.innerHTML = `
     ${learningBanner}
@@ -880,7 +908,7 @@ function renderLookupPanel() {
     <section class="lookup-core-card">
       <strong>核心义项</strong>
       <p>${escapeHtml(report.coreMeaningCn)}</p>
-      ${report.contextNote ? `<div class="lookup-context-note">你的补充语境：${escapeHtml(report.contextNote)}</div>` : ""}
+      ${report.contextQuestion ? `<div class="lookup-context-note">你的疑问：${escapeHtml(report.contextQuestion)}</div>` : ""}
     </section>
 
     ${buildNoteBlock("1. 基本信息", [
@@ -892,6 +920,7 @@ function renderLookupPanel() {
 
     ${buildArrayBlock("2. 中文含义", report.meanings)}
     ${buildLabelValueBlock("3. 用法说明", report.usageNotes)}
+    ${questionBlock}
     ${buildExampleBlock(report.examples)}
     ${buildLabelValueBlock("5. 语感 / 注意点", report.nuanceNotes)}
     ${buildListTextBlock("6. 学习提示", report.learningTip, report.weakPoints)}
@@ -941,6 +970,28 @@ function buildLookupActionBar(record) {
   return `<div class="lookup-action-bar">${actions.join("")}</div>`;
 }
 
+function buildQuestionAnswerBlock(report) {
+  if (!report.contextQuestion || !report.contextAnswer) {
+    return "";
+  }
+
+  return `
+    <section class="detail-section">
+      <div class="detail-section-title">补充疑问解答</div>
+      <div class="detail-list">
+        <div class="detail-list-item">
+          <strong>你的问题</strong>
+          <p>${escapeHtml(report.contextQuestion)}</p>
+        </div>
+        <div class="detail-list-item">
+          <strong>对应解答</strong>
+          <p>${escapeHtml(report.contextAnswer)}</p>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function renderRecentLookupChips() {
   const recentEntries = [...vocabLab.state.entries]
     .filter((entry) => !entry.deletedAt)
@@ -964,9 +1015,21 @@ function renderRecentLookupChips() {
 function renderRecordsPanel() {
   renderStatsGrid();
   renderFilters();
+  renderExportBar();
   renderRecordList();
   renderDetailPanel();
   renderBulkBar();
+}
+
+function renderExportBar() {
+  if (!vocabLab.dom.exportStatus) {
+    return;
+  }
+
+  vocabLab.dom.exportStatus.textContent = vocabLab.state.exportInfo || "选择日期后可以导出这段时间的词汇记录。";
+  if (vocabLab.dom.exportConfirmMenu) {
+    vocabLab.dom.exportConfirmMenu.hidden = !vocabLab.state.exportMenuOpen;
+  }
 }
 
 function renderStatsGrid() {
@@ -1150,6 +1213,114 @@ function buildRecordListTitle() {
     default:
       return "全部记录";
   }
+}
+
+function exportRecordsAsText() {
+  const startDate = vocabLab.dom.exportMenuStartDate?.value || vocabLab.dom.exportStartDate?.value || "";
+  const endDate = vocabLab.dom.exportMenuEndDate?.value || vocabLab.dom.exportEndDate?.value || "";
+
+  if (!startDate || !endDate) {
+    vocabLab.state.exportInfo = "请先选择开始日期和结束日期。";
+    renderExportBar();
+    return;
+  }
+
+  if (startDate > endDate) {
+    vocabLab.state.exportInfo = "开始日期不能晚于结束日期。";
+    renderExportBar();
+    return;
+  }
+
+  const records = getAllMergedRecords()
+    .filter((record) => !record.deletedAt)
+    .filter((record) => isRecordInDateRange(record, startDate, endDate))
+    .sort((left, right) => Number(left.lastQueriedAt || 0) - Number(right.lastQueriedAt || 0));
+
+  if (!records.length) {
+    vocabLab.state.exportInfo = `在 ${startDate} 到 ${endDate} 之间没有找到词汇记录。`;
+    renderExportBar();
+    return;
+  }
+
+  const txtContent = buildExportText(records, startDate, endDate);
+  const blob = new Blob([txtContent], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `vocab-${startDate}-to-${endDate}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+
+  vocabLab.state.exportInfo = `已导出 ${records.length} 条记录：${startDate} 到 ${endDate}。`;
+  syncExportDates(startDate, endDate);
+  toggleExportMenu(false);
+  renderExportBar();
+}
+
+function toggleExportMenu(nextOpen) {
+  vocabLab.state.exportMenuOpen = nextOpen;
+  if (nextOpen) {
+    const startDate = vocabLab.dom.exportStartDate?.value || "";
+    const endDate = vocabLab.dom.exportEndDate?.value || "";
+    syncExportDates(startDate, endDate);
+  }
+  renderExportBar();
+}
+
+function syncExportDates(startDate, endDate) {
+  if (vocabLab.dom.exportStartDate) {
+    vocabLab.dom.exportStartDate.value = startDate || "";
+  }
+  if (vocabLab.dom.exportEndDate) {
+    vocabLab.dom.exportEndDate.value = endDate || "";
+  }
+  if (vocabLab.dom.exportMenuStartDate) {
+    vocabLab.dom.exportMenuStartDate.value = startDate || "";
+  }
+  if (vocabLab.dom.exportMenuEndDate) {
+    vocabLab.dom.exportMenuEndDate.value = endDate || "";
+  }
+}
+
+function handleDocumentClick(event) {
+  if (!vocabLab.state.exportMenuOpen) {
+    return;
+  }
+
+  const exportWrap = event.target.closest(".export-menu-wrap");
+  if (exportWrap) {
+    return;
+  }
+
+  toggleExportMenu(false);
+}
+
+function isRecordInDateRange(record, startDate, endDate) {
+  const timestamp = Number(record.lastQueriedAt || record.lastStudiedAt || 0);
+  if (!timestamp) {
+    return false;
+  }
+
+  const dayText = formatDate(timestamp);
+  return dayText >= startDate && dayText <= endDate;
+}
+
+function buildExportText(records, startDate, endDate) {
+  const lines = [
+    "日语词汇导出",
+    `日期范围：${startDate} 至 ${endDate}`,
+    `导出时间：${formatDateTime(Date.now())}`,
+    `总条数：${records.length}`,
+    ""
+  ];
+
+  records.forEach((record, index) => {
+    lines.push(`${index + 1}. ${record.displayWord}（${record.reading}） ${record.coreMeaningCn}`);
+  });
+
+  return lines.join("\n");
 }
 
 function buildStats() {
@@ -1423,6 +1594,49 @@ function normalizeAnalysisPayload(rawReport, fallbackWord, contextNote) {
     ],
     weakPoints,
     learningTip: String(report.learningTip || "先记住这个词最自然的一句例句，再回看它与近义词的区别。").trim(),
+    teacherNote: String(report.teacherNote || report.nextStepSuggestion || "本次结果由 DeepSeek 生成，并按学习者阅读方式重新整理。").trim(),
+    contextNote: String(contextNote || report.contextNote || "").trim()
+  };
+}
+
+function normalizeAnalysisPayload(rawReport, fallbackWord, contextNote) {
+  const report = rawReport && typeof rawReport === "object" ? rawReport : {};
+  const meanings = normalizeTitledItems(report.meanings);
+  const usageNotes = normalizeLabelValueItems(report.usageNotes);
+  const nuanceNotes = normalizeLabelValueItems(report.nuanceNotes);
+  const examples = normalizeExamples(report.examples);
+  const collocations = uniqueStrings(Array.isArray(report.collocations) ? report.collocations : []);
+  const weakPoints = uniqueStrings(Array.isArray(report.weakPoints) ? report.weakPoints : []);
+
+  return {
+    writing: String(report.writing || fallbackWord || "未输入").trim(),
+    reading: String(report.reading || "需要确认").trim(),
+    romaji: String(report.romaji || "").trim(),
+    partOfSpeech: String(report.partOfSpeech || "需要确认").trim(),
+    frequencyLabel: String(report.frequencyLabel || "需要确认").trim(),
+    registerLabel: String(report.registerLabel || "需要确认").trim(),
+    coreMeaningCn: String(report.coreMeaningCn || meanings[0]?.body || "需要结合语境进一步确认").trim(),
+    contextQuestion: String(report.contextQuestion || contextNote || "").trim(),
+    contextAnswer: String(report.contextAnswer || "").trim(),
+    meanings: meanings.length ? meanings : [{ title: "最常见含义", body: "需要结合语境进一步确认。" }],
+    usageNotes: usageNotes.length ? usageNotes : [
+      { label: "是否常用", value: "需要确认" },
+      { label: "使用场景", value: "请结合真实句子进一步判断。" },
+      { label: "搭配或固定表达", value: collocations.join(" / ") || "建议先通过例句观察。" }
+    ],
+    collocations,
+    examples: examples.length ? examples : [{
+      ja: "例句暂未成功生成，建议重新查询一次。",
+      zh: "这次还没有拿到可直接学习的例句。",
+      note: "通常是因为模型返回内容不完整，可以稍后重试。"
+    }],
+    nuanceNotes: nuanceNotes.length ? nuanceNotes : [
+      { label: "与相似词的区别", value: "需要结合近义词重新确认。" },
+      { label: "常见错误用法", value: "请避免在没有确认语感前直接套用。" },
+      { label: "使用时需要注意", value: "先看例句，再决定是否主动使用。" }
+    ],
+    weakPoints,
+    learningTip: String(report.learningTip || "先记住这个词最自然的一句例句，再回头看它和近义词的区别。").trim(),
     teacherNote: String(report.teacherNote || report.nextStepSuggestion || "本次结果由 DeepSeek 生成，并按学习者阅读方式重新整理。").trim(),
     contextNote: String(contextNote || report.contextNote || "").trim()
   };

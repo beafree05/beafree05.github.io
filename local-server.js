@@ -140,7 +140,8 @@ function serveStaticFile(requestPath, response) {
 
     const ext = path.extname(fullPath).toLowerCase();
     response.writeHead(200, {
-      "Content-Type": MIME_TYPES[ext] || "application/octet-stream"
+      "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+      "Cache-Control": "no-store"
     });
     response.end(data);
   });
@@ -280,6 +281,112 @@ function normalizeAiVocabularyReport(payload, fallbackWord, contextNote) {
         title: "最常见含义",
         body: "需要结合语境进一步确认。"
       }
+    ],
+    usageNotes: usageNotes.length ? usageNotes : [
+      { label: "是否常用", value: "需要确认" },
+      { label: "使用场景", value: "请结合真实句子进一步确认。" },
+      { label: "搭配或固定表达", value: "本次结果未稳定提取出固定搭配。" }
+    ],
+    collocations: normalizeStringArray(data.collocations),
+    examples: examples.length ? examples : [
+      {
+        ja: "例句需要确认。",
+        zh: "这次没有成功提取出稳定例句。",
+        note: "可以稍后重新查询。"
+      }
+    ],
+    nuanceNotes: nuanceNotes.length ? nuanceNotes : [
+      { label: "与相似词的区别", value: "需要确认" },
+      { label: "常见错误用法", value: "请避免直接套用到正式语境中。" },
+      { label: "使用时需要注意", value: "建议先通过例句理解语感。" }
+    ],
+    weakPoints: normalizeStringArray(data.weakPoints),
+    learningTip: cleanString(data.learningTip, "先记住最自然的一句例句，再回头看它和近义词的区别。"),
+    teacherNote: cleanString(data.teacherNote, "本次讲解由 DeepSeek 生成，并按学习者阅读结构整理。"),
+    contextNote: cleanString(contextNote, "")
+  };
+}
+
+function buildVocabSystemPrompt() {
+  return [
+    "You are a professional Japanese teacher.",
+    "Return valid json only.",
+    "Teach one Japanese word or expression for a Chinese-speaking learner.",
+    "Use simplified Chinese for explanations and natural Japanese for examples.",
+    "If the user provides a question about the word, answer that question directly in a dedicated field.",
+    "If the question field is empty, leave contextAnswer as an empty string.",
+    "Be precise. If a reading, nuance, or usage detail is uncertain, write 需要确认 instead of guessing.",
+    "Do not cite fake dictionary names or fake sources.",
+    "JSON schema example:",
+    JSON.stringify({
+      writing: "獲得する",
+      reading: "かくとくする",
+      romaji: "kakutoku suru",
+      partOfSpeech: "名词・サ变动词",
+      frequencyLabel: "常用",
+      registerLabel: "书面语偏多，可用于正式说明",
+      coreMeaningCn: "通过努力、行动或竞争获得有价值的事物",
+      contextQuestion: "它和「取得する」有什么区别？",
+      contextAnswer: "「獲得する」更强调通过努力争取到成果...",
+      meanings: [
+        { title: "最常见含义", body: "..." }
+      ],
+      usageNotes: [
+        { label: "是否常用", value: "..." },
+        { label: "使用场景", value: "..." },
+        { label: "搭配或固定表达", value: "..." }
+      ],
+      collocations: ["知識を獲得する"],
+      examples: [
+        { ja: "彼は新しい資格を獲得した。", zh: "他获得了新的资格。", note: "展示正式书面语搭配。" }
+      ],
+      nuanceNotes: [
+        { label: "与相似词的区别", value: "..." },
+        { label: "常见错误用法", value: "..." },
+        { label: "使用时需要注意", value: "..." }
+      ],
+      weakPoints: ["容易和「取得する」混淆"],
+      learningTip: "...",
+      teacherNote: "..."
+    })
+  ].join("\n");
+}
+
+function buildVocabUserPrompt(word, contextNote) {
+  return [
+    "Please analyze this Japanese vocabulary item and return json.",
+    `word: ${word}`,
+    `user_question: ${contextNote || "无额外问题"}`,
+    "Required teaching structure:",
+    "1. Basic info: word, reading, romaji(optional), part of speech.",
+    "2. Chinese meanings: most common meaning first, distinguish multiple senses if needed.",
+    "3. Usage: whether common, scene/register, collocations/fixed expressions.",
+    "4. If user_question is not empty, answer it directly in contextAnswer. If it is empty, return contextAnswer as an empty string.",
+    "5. Examples: 2 to 3 natural Japanese examples, each with Chinese translation and a short usage explanation.",
+    "6. Nuance / caution: similar words, common mistakes, usage details.",
+    "7. Learning tip: one short memory aid."
+  ].join("\n");
+}
+
+function normalizeAiVocabularyReport(payload, fallbackWord, contextNote) {
+  const data = payload && typeof payload === "object" ? payload : {};
+  const meanings = normalizeTitledArray(data.meanings);
+  const usageNotes = normalizeLabelValueArray(data.usageNotes);
+  const nuanceNotes = normalizeLabelValueArray(data.nuanceNotes);
+  const examples = normalizeExampleArray(data.examples);
+
+  return {
+    writing: cleanString(data.writing, fallbackWord),
+    reading: cleanString(data.reading, "需要确认"),
+    romaji: cleanString(data.romaji, ""),
+    partOfSpeech: cleanString(data.partOfSpeech, "需要确认"),
+    frequencyLabel: cleanString(data.frequencyLabel, "需要确认"),
+    registerLabel: cleanString(data.registerLabel, "需要确认"),
+    coreMeaningCn: cleanString(data.coreMeaningCn, meanings[0]?.body || "需要结合语境进一步确认"),
+    contextQuestion: cleanString(data.contextQuestion, contextNote || ""),
+    contextAnswer: cleanString(data.contextAnswer, ""),
+    meanings: meanings.length ? meanings : [
+      { title: "最常见含义", body: "需要结合语境进一步确认。" }
     ],
     usageNotes: usageNotes.length ? usageNotes : [
       { label: "是否常用", value: "需要确认" },

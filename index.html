@@ -105,8 +105,8 @@
                   </label>
 
                   <label class="vocab-label" for="lookupContextInput">
-                    <span>&#x8865;&#x5145;&#x8BED;&#x5883;&#xFF08;&#x53EF;&#x9009;&#xFF09;</span>
-                    <textarea id="lookupContextInput" rows="7" placeholder="&#x4F60;&#x53EF;&#x4EE5;&#x544A;&#x8BC9;&#x6211;&#x4F60;&#x5728;&#x54EA;&#x91CC;&#x770B;&#x5230;&#x8FD9;&#x4E2A;&#x8BCD;&#x3001;&#x60F3;&#x533A;&#x5206;&#x54EA;&#x4E9B;&#x8FD1;&#x4E49;&#x8BCD;&#x3001;&#x6216;&#x8005;&#x60F3;&#x77E5;&#x9053;&#x5B83;&#x9002;&#x4E0D;&#x9002;&#x5408;&#x7528;&#x5728; ES / &#x9762;&#x8BD5; / &#x8BBA;&#x6587;&#x91CC;&#x3002;"></textarea>
+                    <span>&#x4F60;&#x5BF9;&#x8FD9;&#x4E2A;&#x8BCD;&#x7684;&#x7591;&#x95EE;&#xFF08;&#x53EF;&#x9009;&#xFF09;</span>
+                    <textarea id="lookupContextInput" rows="7" placeholder="&#x4F60;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x5199;&#x95EE;&#x9898;&#xFF0C;&#x6BD4;&#x5982;&#xFF1A;&#10;&#x30FB;&#x5B83;&#x548C;&#x54EA;&#x4E9B;&#x8FD1;&#x4E49;&#x8BCD;&#x5BB9;&#x6613;&#x6DF7;&#x6DC6;&#xFF1F;&#10;&#x30FB;&#x80FD;&#x4E0D;&#x80FD;&#x7528;&#x5728; ES / &#x9762;&#x8BD5; / &#x8BBA;&#x6587;&#x91CC;&#xFF1F;&#10;&#x30FB;&#x4E3A;&#x4EC0;&#x4E48;&#x6211;&#x603B;&#x662F;&#x7528;&#x9519;&#x5B83;&#xFF1F;"></textarea>
                   </label>
 
                   <div class="vocab-note-box">
@@ -153,6 +153,48 @@
             </div>
 
             <div id="recordsPanel" class="records-panel-view" hidden>
+              <div class="export-toolbar export-card">
+                <div class="export-card-head">
+                  <div>
+                    <strong>按日期导出词汇 TXT</strong>
+                    <span>导出格式：单词（读音） 中文解释</span>
+                  </div>
+                </div>
+                <div class="export-date-group">
+                  <label class="export-date-label">
+                    <span>&#x5F00;&#x59CB;&#x65E5;&#x671F;</span>
+                    <input id="exportStartDate" type="date" />
+                  </label>
+                  <label class="export-date-label">
+                    <span>&#x7ED3;&#x675F;&#x65E5;&#x671F;</span>
+                    <input id="exportEndDate" type="date" />
+                  </label>
+                </div>
+                <div class="export-card-actions">
+                  <div class="export-menu-wrap">
+                    <button id="exportTxtBtn" class="secondary-btn" type="button">&#x5BFC;&#x51FA; TXT</button>
+                    <div id="exportConfirmMenu" class="export-confirm-menu" hidden>
+                      <strong>&#x786E;&#x5B9A;&#x8981;&#x6309;&#x65E5;&#x671F;&#x5BFC;&#x51FA;&#x8BCD;&#x6C47; TXT &#x5417;&#xFF1F;</strong>
+                      <div class="export-menu-date-group">
+                        <label class="export-date-label">
+                          <span>&#x5F00;&#x59CB;&#x65E5;&#x671F;</span>
+                          <input id="exportMenuStartDate" type="date" />
+                        </label>
+                        <label class="export-date-label">
+                          <span>&#x7ED3;&#x675F;&#x65E5;&#x671F;</span>
+                          <input id="exportMenuEndDate" type="date" />
+                        </label>
+                      </div>
+                      <div class="export-menu-actions">
+                        <button id="confirmExportBtn" class="primary-btn" type="button">&#x786E;&#x5B9A;</button>
+                        <button id="cancelExportBtn" class="ghost-btn" type="button">&#x5426;</button>
+                      </div>
+                    </div>
+                  </div>
+                  <span id="exportStatus" class="export-status">&#x9009;&#x62E9;&#x65E5;&#x671F;&#x540E;&#x53EF;&#x4EE5;&#x5BFC;&#x51FA;&#x8FD9;&#x6BB5;&#x65F6;&#x95F4;&#x7684;&#x8BCD;&#x6C47;&#x8BB0;&#x5F55;&#x3002;</span>
+                </div>
+              </div>
+
               <div id="recordStatsGrid" class="record-stats-grid"></div>
 
               <div class="records-toolbar">
