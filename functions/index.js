@@ -82,6 +82,101 @@ exports.dictionaryLookup = onRequest(
   }
 );
 
+exports.vocabAnalyze = onRequest(
+  {
+    region: "asia-northeast1",
+    invoker: "public",
+    timeoutSeconds: 60
+  },
+  async (request, response) => {
+    setCorsHeaders(response, "POST, OPTIONS");
+
+    if (request.method === "OPTIONS") {
+      response.status(204).send("");
+      return;
+    }
+
+    if (request.method !== "POST") {
+      response.status(405).json({ error: "Method not allowed." });
+      return;
+    }
+
+    const word = String(request.body?.word || "").trim();
+    const contextNote = String(request.body?.contextNote || "").trim();
+
+    if (!word) {
+      response.status(400).json({ error: "Missing word." });
+      return;
+    }
+
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const baseUrl = String(process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com").replace(/\/$/, "");
+    const model = String(process.env.DEEPSEEK_MODEL || "deepseek-v4-flash");
+
+    if (!apiKey) {
+      response.status(500).json({ error: "DEEPSEEK_API_KEY is not configured." });
+      return;
+    }
+
+    try {
+      const upstreamResponse = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.55,
+          max_tokens: 2600,
+          response_format: {
+            type: "json_object"
+          },
+          messages: [
+            {
+              role: "system",
+              content: buildVocabSystemPrompt()
+            },
+            {
+              role: "user",
+              content: buildVocabUserPrompt(word, contextNote)
+            }
+          ]
+        })
+      });
+
+      const upstreamPayload = await upstreamResponse.json().catch(() => ({}));
+
+      if (!upstreamResponse.ok) {
+        console.error("DeepSeek upstream error:", upstreamPayload);
+        response.status(502).json({
+          error: upstreamPayload.error?.message || "DeepSeek upstream request failed."
+        });
+        return;
+      }
+
+      const content = upstreamPayload?.choices?.[0]?.message?.content;
+      if (!content) {
+        response.status(502).json({ error: "DeepSeek returned empty content." });
+        return;
+      }
+
+      const parsed = JSON.parse(content);
+      const report = normalizeAiVocabularyReport(parsed, word, contextNote);
+
+      response.set("Cache-Control", "no-store");
+      response.status(200).json({
+        source: "DeepSeek",
+        model,
+        report
+      });
+    } catch (error) {
+      console.error("Vocabulary analyze failed:", error);
+      response.status(500).json({ error: "Unable to generate vocabulary report." });
+    }
+  }
+);
+
 function buildCalendarIcs(events) {
   const lines = [
     "BEGIN:VCALENDAR",
@@ -122,10 +217,170 @@ function buildCalendarIcs(events) {
   return `${lines.join("\r\n")}\r\n`;
 }
 
-function setCorsHeaders(response) {
+function setCorsHeaders(response, methods = "GET, OPTIONS") {
   response.set("Access-Control-Allow-Origin", "*");
-  response.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+  response.set("Access-Control-Allow-Methods", methods);
   response.set("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function buildVocabSystemPrompt() {
+  return [
+    "You are a professional Japanese teacher.",
+    "Return valid json only.",
+    "Teach one Japanese word or expression for a Chinese-speaking learner.",
+    "Be precise. If a reading, nuance, or usage detail is uncertain, write 需要确认 instead of guessing.",
+    "Examples must sound natural in Japanese.",
+    "Do not cite fake dictionary names or fake sources.",
+    "Use simplified Chinese for explanations.",
+    "Keep the response compact but genuinely useful for learning.",
+    "JSON schema example:",
+    JSON.stringify({
+      writing: "獲得する",
+      reading: "かくとくする",
+      romaji: "kakutoku suru",
+      partOfSpeech: "名词・サ变动词",
+      frequencyLabel: "常用",
+      registerLabel: "书面语偏多，可用于正式说明",
+      coreMeaningCn: "通过努力、行动或竞争获得有价值的事物",
+      meanings: [
+        { title: "最常见含义", body: "..." },
+        { title: "含义 2", body: "..." }
+      ],
+      usageNotes: [
+        { label: "是否常用", value: "..." },
+        { label: "使用场景", value: "..." },
+        { label: "搭配或固定表达", value: "..." }
+      ],
+      collocations: ["知識を獲得する", "支持を獲得する"],
+      examples: [
+        { ja: "彼は新しい市場で大きな支持を獲得した。", zh: "他在新市场获得了很大的支持。", note: "展示书面语里常见的搭配。" },
+        { ja: "大学で専門知識を獲得することが大切だ。", zh: "在大学获得专业知识很重要。", note: "展示抽象对象也能和这个词搭配。" }
+      ],
+      nuanceNotes: [
+        { label: "与相似词的区别", value: "..." },
+        { label: "常见错误用法", value: "..." },
+        { label: "使用时需要注意", value: "..." }
+      ],
+      weakPoints: ["容易和「取得する」混淆", "口语里不一定要选这个词"],
+      learningTip: "...",
+      teacherNote: "..."
+    })
+  ].join("\n");
+}
+
+function buildVocabUserPrompt(word, contextNote) {
+  return [
+    "Please analyze this Japanese vocabulary item and return json.",
+    `word: ${word}`,
+    `context_note: ${contextNote || "无额外语境"}`,
+    "Required teaching structure:",
+    "1. Basic info: word, reading, romaji(optional), part of speech.",
+    "2. Chinese meanings: most common meaning first, distinguish multiple senses if needed.",
+    "3. Usage: whether common, scene/register, collocations/fixed expressions.",
+    "4. Examples: 2 to 3 natural Japanese examples, each with Chinese translation and a short usage explanation.",
+    "5. Nuance / caution: similar words, common mistakes, usage details.",
+    "6. Learning tip: one short memory aid.",
+    "Extra requirement: if the user context asks about interview, ES, thesis, formal writing, or casual speech, address that directly."
+  ].join("\n");
+}
+
+function normalizeAiVocabularyReport(payload, fallbackWord, contextNote) {
+  const data = payload && typeof payload === "object" ? payload : {};
+  const meanings = normalizeTitledArray(data.meanings);
+  const usageNotes = normalizeLabelValueArray(data.usageNotes);
+  const nuanceNotes = normalizeLabelValueArray(data.nuanceNotes);
+  const examples = normalizeExampleArray(data.examples);
+
+  return {
+    writing: cleanString(data.writing, fallbackWord),
+    reading: cleanString(data.reading, "需要确认"),
+    romaji: cleanString(data.romaji, ""),
+    partOfSpeech: cleanString(data.partOfSpeech, "需要确认"),
+    frequencyLabel: cleanString(data.frequencyLabel, "需要确认"),
+    registerLabel: cleanString(data.registerLabel, "需要确认"),
+    coreMeaningCn: cleanString(data.coreMeaningCn, meanings[0]?.body || "需要结合语境进一步确认"),
+    meanings: meanings.length ? meanings : [
+      {
+        title: "最常见含义",
+        body: "需要结合语境进一步确认。"
+      }
+    ],
+    usageNotes: usageNotes.length ? usageNotes : [
+      { label: "是否常用", value: "需要确认" },
+      { label: "使用场景", value: "请结合真实句子进一步确认。" },
+      { label: "搭配或固定表达", value: "本次结果未稳定提取出固定搭配。" }
+    ],
+    collocations: normalizeStringArray(data.collocations),
+    examples: examples.length ? examples : [
+      {
+        ja: "例句需要确认。",
+        zh: "这次没有成功提取出稳定例句。",
+        note: "可以稍后重新查询。"
+      }
+    ],
+    nuanceNotes: nuanceNotes.length ? nuanceNotes : [
+      { label: "与相似词的区别", value: "需要确认" },
+      { label: "常见错误用法", value: "请避免直接套用到正式语境中。" },
+      { label: "使用时需要注意", value: "建议先通过例句理解语感。" }
+    ],
+    weakPoints: normalizeStringArray(data.weakPoints),
+    learningTip: cleanString(data.learningTip, "先记住最自然的一句例句，再回头看它和近义词的区别。"),
+    teacherNote: cleanString(data.teacherNote, "本次讲解由 DeepSeek 生成，并按学习者阅读结构整理。"),
+    contextNote: cleanString(contextNote, "")
+  };
+}
+
+function normalizeTitledArray(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => ({
+      title: cleanString(item?.title, ""),
+      body: cleanString(item?.body, "")
+    }))
+    .filter((item) => item.title && item.body);
+}
+
+function normalizeLabelValueArray(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => ({
+      label: cleanString(item?.label, ""),
+      value: cleanString(item?.value, "")
+    }))
+    .filter((item) => item.label && item.value);
+}
+
+function normalizeExampleArray(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => ({
+      ja: cleanString(item?.ja, ""),
+      zh: cleanString(item?.zh, ""),
+      note: cleanString(item?.note, "")
+    }))
+    .filter((item) => item.ja && item.zh);
+}
+
+function normalizeStringArray(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return [...new Set(value.map((item) => cleanString(item, "")).filter(Boolean))];
+}
+
+function cleanString(value, fallback = "") {
+  const result = String(value || "").replace(/\s+/g, " ").trim();
+  return result || fallback;
 }
 
 function extractKotobankEntry(html, finalUrl, term) {

@@ -1,4 +1,5 @@
 import { db, APPLE_CALENDAR_FEED_URL } from "./firebase.js";
+import { initVocabLab } from "./vocab-lab.js";
 import {
   addDoc,
   collection,
@@ -307,6 +308,7 @@ const VOCAB_LIBRARY = {
 initNavigation();
 initReadingList();
 initVocabJudge();
+initVocabLab();
 initCalendar();
 window.addEventListener("online", () => refreshSyncStatus());
 window.addEventListener("offline", () => refreshSyncStatus());

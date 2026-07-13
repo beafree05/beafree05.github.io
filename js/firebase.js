@@ -15,3 +15,4 @@ const app = initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
 export const APPLE_CALENDAR_FEED_URL = "";
+export const VOCAB_ANALYZE_URL = "https://asia-northeast1-sairyushi-readinglist.cloudfunctions.net/vocabAnalyze";
