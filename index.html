@@ -55,6 +55,53 @@
             <span>&#x82F9;&#x679C;&#x65E5;&#x5386;&#x5173;&#x8054;</span>
           </div>
         </div>
+
+        <div class="card ai-chat-card" aria-labelledby="aiChatTitle">
+          <div class="ai-chat-intro">
+            <div class="ai-host-heading">
+              <div class="ai-host-avatar" aria-hidden="true">菲</div>
+              <div>
+                <div class="ai-host-name-row">
+                  <h2 id="aiChatTitle">和永雏塔菲 AI 聊聊天</h2>
+                  <span class="ai-online-badge"><i></i>在线</span>
+                </div>
+                <p class="ai-host-subtitle">原创甜酷系虚拟主播 AI · 有点俏皮，也会认真听你说</p>
+              </div>
+            </div>
+
+            <div class="ai-persona-note">
+              <strong>关于这个角色</strong>
+              <p>这是个人粉丝站制作的永雏塔菲主题 AI，会用活泼、轻微毒舌又关心人的直播感语气回应。它不是永雏塔菲本人，也不代表本人或任何官方账号。</p>
+            </div>
+
+            <div class="ai-prompt-group" aria-label="快捷话题">
+              <span>不知道聊什么？</span>
+              <button type="button" data-chat-prompt="今天有点没精神，哄哄我吧">今天有点没精神</button>
+              <button type="button" data-chat-prompt="陪我制定一个今晚的学习计划">陪我做学习计划</button>
+              <button type="button" data-chat-prompt="用轻松的方式考我一个日语单词">考我一个日语词</button>
+            </div>
+          </div>
+
+          <div class="ai-chat-shell">
+            <div id="aiChatMessages" class="ai-chat-messages" role="log" aria-live="polite" aria-label="与永雏塔菲主题 AI 的对话"></div>
+
+            <div id="aiChatTyping" class="ai-typing" aria-label="永雏塔菲主题 AI 正在输入" hidden>
+              <span></span><span></span><span></span>
+            </div>
+
+            <form id="aiChatForm" class="ai-chat-form">
+              <label class="sr-only" for="aiChatInput">输入想对永雏塔菲主题 AI 说的话</label>
+              <textarea id="aiChatInput" rows="2" maxlength="600" placeholder="说点什么……（Enter 发送，Shift + Enter 换行）" required></textarea>
+              <div class="ai-chat-actions">
+                <span id="aiChatStatus">对话只保存在本次浏览器会话中</span>
+                <div>
+                  <button id="aiChatClear" class="ai-chat-clear" type="button">清空</button>
+                  <button id="aiChatSend" class="ai-chat-send" type="submit">发送 <b aria-hidden="true">↗</b></button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
       </section>
 
       <section id="reading" class="page">
@@ -382,5 +429,6 @@
     })();
   </script>
   <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/chat.js"></script>
 </body>
 </html>
