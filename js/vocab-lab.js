@@ -1558,7 +1558,7 @@ function buildRecordCardActions(record) {
   `;
 }
 
-function normalizeAnalysisPayload(rawReport, fallbackWord, contextNote) {
+function normalizeAnalysisPayloadLegacy(rawReport, fallbackWord, contextNote) {
   const report = rawReport && typeof rawReport === "object" ? rawReport : {};
   const meanings = normalizeTitledItems(report.meanings);
   const usageNotes = normalizeLabelValueItems(report.usageNotes);
