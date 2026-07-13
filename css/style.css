@@ -1358,6 +1358,45 @@ p {
   align-items: center;
 }
 
+.export-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(240px, 320px);
+  gap: 12px;
+  align-items: end;
+}
+
+.export-date-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.export-date-label {
+  display: grid;
+  gap: 6px;
+  color: #95697a;
+  font-weight: 600;
+}
+
+.export-date-label span {
+  font-size: 13px;
+}
+
+.export-date-label input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(248, 165, 194, 0.24);
+  background: rgba(255, 252, 253, 0.96);
+  color: var(--ink);
+}
+
+.export-status {
+  color: #9d7686;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
 .records-search-wrap input,
 .record-sort-select {
   width: 100%;
@@ -1595,6 +1634,8 @@ p {
 
   .record-stats-grid,
   .records-toolbar,
+  .export-toolbar,
+  .export-date-group,
   .records-layout,
   .info-grid {
     grid-template-columns: 1fr;
