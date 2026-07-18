@@ -342,9 +342,9 @@ function buildAnalyzeEndpoints() {
 
   if (isLocalHttp) {
     endpoints.push(`${window.location.origin}/api/vocab-analyze`);
+    endpoints.push(LOCAL_VOCAB_ANALYZE_URL);
   }
 
-  endpoints.push(LOCAL_VOCAB_ANALYZE_URL);
   endpoints.push(VOCAB_ANALYZE_URL || DEFAULT_FUNCTION_URL);
 
   return [...new Set(endpoints.filter(Boolean))];
