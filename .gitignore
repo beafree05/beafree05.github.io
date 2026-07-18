@@ -1,0 +1,16 @@
+.firebase/
+
+# Local dependency caches
+node_modules/
+functions/node_modules/
+functions/.env
+functions/.env.*
+!functions/.env.example
+worker/.wrangler/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Keep generated JMdict shards in the repo for static hosting.
+!data/
